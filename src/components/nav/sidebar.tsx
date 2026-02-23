@@ -16,7 +16,7 @@ const NAV_ITEMS = [
   { href: '/family-chat', label: 'Human Chat', icon: '🗨️' },
   { href: '/chat', label: 'AI Chat', icon: '💬' },
   { href: '/images', label: 'Images', icon: '🎨', permission: 'canGenerateImages' as const },
-  { href: '/settings', label: 'Settings', icon: '⚙️', permission: 'canManageUsers' as const },
+  { href: '/settings', label: 'Settings', icon: '⚙️' },
 ]
 
 export function Sidebar() {

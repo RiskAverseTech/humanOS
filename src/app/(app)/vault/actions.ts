@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export type DocumentRow = {
   id: string
@@ -159,11 +160,17 @@ export async function deleteDocument(id: string) {
   return { success: true }
 }
 
-/** Get a signed URL for downloading/previewing a document */
+/** Get a signed URL for downloading/previewing a document.
+ *  Uses the admin client so shared documents from other users can be previewed. */
 export async function getDocumentUrl(storagePath: string): Promise<string | null> {
+  // Ensure the caller is authenticated before generating a URL
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
 
-  const { data, error } = await supabase.storage
+  // Use admin client to bypass per-user storage policies for shared docs
+  const admin = createAdminClient()
+  const { data, error } = await admin.storage
     .from('documents')
     .createSignedUrl(storagePath, 3600) // 1 hour expiry
 

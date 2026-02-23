@@ -87,12 +87,7 @@ export async function updateSession(request: NextRequest) {
         }
       }
 
-      // Block non-admin users from settings/admin routes
-      if (pathname.startsWith('/settings') && profile.role !== 'admin') {
-        const url = request.nextUrl.clone()
-        url.pathname = '/dashboard'
-        return NextResponse.redirect(url)
-      }
+      // Settings is accessible to all roles; admin-only sections are gated in the UI
     }
   }
 

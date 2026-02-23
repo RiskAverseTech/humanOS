@@ -15,7 +15,9 @@ export default async function DashboardPage() {
     .eq('id', true)
     .maybeSingle()
 
-  // Fetch recent activity from all modules in parallel
+  const userId = profile?.user_id
+
+  // Fetch recent activity (own items only) + billing data (all items) in parallel
   const [
     { data: recentNotes },
     { data: recentDocs },
@@ -30,31 +32,37 @@ export default async function DashboardPage() {
     supabase
       .from('notes')
       .select('id, title, updated_at, is_shared, owner_id')
+      .eq('owner_id', userId!)
       .order('updated_at', { ascending: false })
       .limit(5),
     supabase
       .from('documents')
       .select('id, file_name, created_at, is_shared, owner_id')
+      .eq('owner_id', userId!)
       .order('created_at', { ascending: false })
       .limit(5),
     supabase
       .from('chat_threads')
       .select('id, title, created_at, owner_id')
+      .eq('owner_id', userId!)
       .order('created_at', { ascending: false })
       .limit(3),
     supabase
       .from('generated_images')
       .select('id, prompt, created_at, owner_id')
+      .eq('owner_id', userId!)
       .order('created_at', { ascending: false })
       .limit(3),
     supabase
       .from('family_chat_channels')
       .select('id, name, updated_at, owner_id')
+      .eq('owner_id', userId!)
       .order('updated_at', { ascending: false })
       .limit(3),
     supabase
       .from('todo_cards')
       .select('id, title, updated_at, owner_id')
+      .eq('owner_id', userId!)
       .order('updated_at', { ascending: false })
       .limit(3),
     supabase
