@@ -1,0 +1,245 @@
+/* ============================================================================
+   FamilyOS – Design Tokens (CSS Custom Properties)
+   ============================================================================ */
+
+:root {
+  /* --- Colour Palette --- */
+  --color-bg:            #fafafa;
+  --color-bg-secondary:  #f0f0f0;
+  --color-bg-tertiary:   #e5e5e5;
+  --color-surface:       #ffffff;
+  --color-surface-hover: #f5f5f5;
+
+  --color-text:          #1a1a1a;
+  --color-text-secondary:#666666;
+  --color-text-muted:    #999999;
+  --color-text-inverse:  #ffffff;
+
+  --color-primary:       #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-light: #dbeafe;
+
+  --color-accent:        #7c3aed;
+  --color-accent-hover:  #6d28d9;
+  --color-accent-light:  #ede9fe;
+
+  --color-success:       #16a34a;
+  --color-success-light: #dcfce7;
+  --color-warning:       #d97706;
+  --color-warning-light: #fef3c7;
+  --color-danger:        #dc2626;
+  --color-danger-light:  #fee2e2;
+
+  --color-border:        #e2e2e2;
+  --color-border-strong: #cccccc;
+
+  /* --- Typography --- */
+  --font-sans:   'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono:   'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+
+  --text-xs:     0.75rem;   /* 12px */
+  --text-sm:     0.875rem;  /* 14px */
+  --text-base:   1rem;      /* 16px */
+  --text-lg:     1.125rem;  /* 18px */
+  --text-xl:     1.25rem;   /* 20px */
+  --text-2xl:    1.5rem;    /* 24px */
+  --text-3xl:    1.875rem;  /* 30px */
+
+  --leading-tight:   1.25;
+  --leading-normal:  1.5;
+  --leading-relaxed: 1.625;
+
+  --font-normal:   400;
+  --font-medium:   500;
+  --font-semibold: 600;
+  --font-bold:     700;
+
+  /* --- Spacing Scale --- */
+  --space-0:   0;
+  --space-1:   0.25rem;  /* 4px */
+  --space-2:   0.5rem;   /* 8px */
+  --space-3:   0.75rem;  /* 12px */
+  --space-4:   1rem;     /* 16px */
+  --space-5:   1.25rem;  /* 20px */
+  --space-6:   1.5rem;   /* 24px */
+  --space-8:   2rem;     /* 32px */
+  --space-10:  2.5rem;   /* 40px */
+  --space-12:  3rem;     /* 48px */
+  --space-16:  4rem;     /* 64px */
+
+  /* --- Border Radius --- */
+  --radius-sm:   4px;
+  --radius-md:   6px;
+  --radius-lg:   8px;
+  --radius-xl:   12px;
+  --radius-2xl:  16px;
+  --radius-full: 9999px;
+
+  /* --- Shadows --- */
+  --shadow-sm:   0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md:   0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg:   0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-xl:   0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+
+  /* --- Transitions --- */
+  --transition-fast:   150ms ease;
+  --transition-normal: 200ms ease;
+  --transition-slow:   300ms ease;
+
+  /* --- Layout --- */
+  --sidebar-width:     260px;
+  --header-height:     56px;
+  --max-content-width: 900px;
+
+  /* --- Z-index Scale --- */
+  --z-dropdown:  10;
+  --z-sticky:    20;
+  --z-overlay:   30;
+  --z-modal:     40;
+  --z-toast:     50;
+}
+
+/* Discord-like dark theme */
+[data-theme='dark'] {
+  --color-bg:            #1e1f22;
+  --color-bg-secondary:  #2b2d31;
+  --color-bg-tertiary:   #35373c;
+  --color-surface:       #232428;
+  --color-surface-hover: #2c2f34;
+
+  --color-text:          #f2f3f5;
+  --color-text-secondary:#d4d7dc;
+  --color-text-muted:    #a8adb7;
+  --color-text-inverse:  #111214;
+
+  --color-primary:       #5865f2;
+  --color-primary-hover: #4752c4;
+  --color-primary-light: rgba(88, 101, 242, 0.16);
+
+  --color-accent:        #3ba55d;
+  --color-accent-hover:  #2d7d46;
+  --color-accent-light:  rgba(59, 165, 93, 0.16);
+
+  --color-success:       #3ba55d;
+  --color-success-light: rgba(59, 165, 93, 0.16);
+  --color-warning:       #faa81a;
+  --color-warning-light: rgba(250, 168, 26, 0.18);
+  --color-danger:        #ed4245;
+  --color-danger-light:  rgba(237, 66, 69, 0.18);
+
+  --color-border:        #3f4147;
+  --color-border-strong: #555861;
+
+  --shadow-sm:   0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md:   0 6px 14px rgba(0, 0, 0, 0.32);
+  --shadow-lg:   0 12px 24px rgba(0, 0, 0, 0.34);
+  --shadow-xl:   0 20px 36px rgba(0, 0, 0, 0.4);
+}
+
+/* Bray mode: warm light pink theme */
+[data-theme='bray'] {
+  --color-bg:            #fff5f8;
+  --color-bg-secondary:  #ffeaf2;
+  --color-bg-tertiary:   #ffdce9;
+  --color-surface:       #fffafb;
+  --color-surface-hover: #fff0f5;
+
+  --color-text:          #3a2230;
+  --color-text-secondary:#6a4658;
+  --color-text-muted:    #9f7c8d;
+  --color-text-inverse:  #ffffff;
+
+  --color-primary:       #e75480;
+  --color-primary-hover: #cf3f6f;
+  --color-primary-light: #ffd8e6;
+
+  --color-accent:        #ff7aa2;
+  --color-accent-hover:  #f06290;
+  --color-accent-light:  #ffe3ee;
+
+  --color-success:       #2fa06f;
+  --color-success-light: #d8f5e9;
+  --color-warning:       #d88428;
+  --color-warning-light: #ffefcf;
+  --color-danger:        #d9486f;
+  --color-danger-light:  #ffdce6;
+
+  --color-border:        #f1c5d5;
+  --color-border-strong: #e4abc0;
+}
+
+/* ============================================================================
+   Reset & Base Styles
+   ============================================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color-scheme: light;
+}
+
+html[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  min-height: 100vh;
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--color-primary-hover);
+  text-decoration: underline;
+}
+
+img, video {
+  max-width: 100%;
+  height: auto;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}

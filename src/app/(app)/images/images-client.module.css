@@ -1,0 +1,461 @@
+.container {
+  padding-top: var(--space-4);
+}
+
+.title {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  margin-bottom: var(--space-6);
+}
+
+/* Form */
+.form {
+  margin-bottom: var(--space-6);
+}
+
+.modeTabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-lg);
+  background-color: var(--color-bg-secondary);
+  margin-bottom: var(--space-3);
+}
+
+.modeTab {
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  cursor: pointer;
+}
+
+.modeTab:hover:not(:disabled) {
+  background-color: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.modeTabActive {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+}
+
+.modeTab:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.formMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+
+.modelBadge {
+  font-size: var(--text-xs);
+  color: var(--color-primary);
+  background-color: var(--color-primary-light);
+  border-radius: var(--radius-full);
+  padding: 4px 10px;
+}
+
+.editHint {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.editToolsRow {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.uploadEditBtn {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-radius: var(--radius-md);
+  padding: 7px 10px;
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+.uploadEditBtn:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+}
+
+.uploadEditBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.hiddenFileInput {
+  display: none;
+}
+
+.editSourceCard {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  border-radius: var(--radius-lg);
+}
+
+.editSourceThumb {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background-color: var(--color-bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.editSourceThumbImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.editSourceInfo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.editSourceLabel {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.editSourcePrompt {
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.clearEditBtn {
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  color: var(--color-text-muted);
+  border-radius: var(--radius-md);
+  padding: 6px 10px;
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+.clearEditBtn:hover:not(:disabled) {
+  color: var(--color-text);
+  background-color: var(--color-surface-hover);
+}
+
+.clearEditBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.inputRow {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.promptInput {
+  flex: 1;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  outline: none;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  transition: border-color var(--transition-fast);
+}
+
+.promptInput:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+.sizeSelect {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.generateButton {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--color-text-inverse);
+  background-color: var(--color-accent);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--transition-fast);
+}
+
+.generateButton:hover:not(:disabled) {
+  background-color: var(--color-accent-hover);
+}
+
+.generateButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.error {
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+  margin-top: var(--space-2);
+}
+
+/* Empty state */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  min-height: 250px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.emptyIcon {
+  font-size: 3rem;
+}
+
+/* Gallery grid */
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-3);
+}
+
+.card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.card:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
+}
+
+.thumbnail {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  display: block;
+}
+
+.placeholder {
+  width: 100%;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  background-color: var(--color-bg-secondary);
+}
+
+.cardPrompt {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 0;
+}
+
+.cardMeta {
+  padding: 0 var(--space-3) var(--space-3);
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+/* Lightbox */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+}
+
+.lightbox {
+  background-color: var(--color-surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  max-width: 700px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.lightboxHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  gap: var(--space-3);
+}
+
+.lightboxPrompt {
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lightboxActions {
+  display: flex;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.downloadBtn {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+}
+
+.downloadBtn:hover {
+  background-color: var(--color-primary-light);
+  text-decoration: none;
+}
+
+.deleteBtn {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-md);
+  background: none;
+  cursor: pointer;
+}
+
+.deleteBtn:hover {
+  background-color: var(--color-danger-light);
+}
+
+.editBtn {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  background: none;
+  cursor: pointer;
+}
+
+.editBtn:hover {
+  background-color: var(--color-accent-light);
+}
+
+.closeBtn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-xl);
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.closeBtn:hover {
+  color: var(--color-text);
+  background-color: var(--color-surface-hover);
+}
+
+.lightboxImage {
+  width: 100%;
+  max-height: 60vh;
+  object-fit: contain;
+  background-color: var(--color-bg-secondary);
+}
+
+.loading {
+  padding: var(--space-8);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.lightboxMeta {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  border-top: 1px solid var(--color-border);
+}
+
+@media (max-width: 600px) {
+  .inputRow {
+    flex-direction: column;
+  }
+
+  .editSourceCard {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .editSourceInfo {
+    width: 100%;
+    flex: 0 0 100%;
+  }
+
+  .lightboxActions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .gallery {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+}

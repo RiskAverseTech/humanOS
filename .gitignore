@@ -25,11 +25,20 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
-.env*.local
+# local env files (keep secrets out of git)
+.env
+.env.*
+!.env.example
 
 # vercel
 .vercel
+
+# local Next.js crash-recovery folders
+.next-corrupt-*/
+.next-devreset-*/
+
+# local Supabase SQL / migrations (managed separately)
+supabase/**/*.sql
 
 # typescript
 *.tsbuildinfo

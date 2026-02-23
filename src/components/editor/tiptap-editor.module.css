@@ -1,0 +1,158 @@
+.editor {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 400px;
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.prosemirror {
+  padding: var(--space-4) var(--space-6);
+  min-height: 350px;
+  outline: none;
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text);
+}
+
+/* Headings */
+.prosemirror h1 {
+  font-size: var(--text-3xl);
+  font-weight: var(--font-bold);
+  margin: var(--space-6) 0 var(--space-3);
+  line-height: var(--leading-tight);
+}
+
+.prosemirror h2 {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-semibold);
+  margin: var(--space-5) 0 var(--space-2);
+  line-height: var(--leading-tight);
+}
+
+.prosemirror h3 {
+  font-size: var(--text-xl);
+  font-weight: var(--font-semibold);
+  margin: var(--space-4) 0 var(--space-2);
+  line-height: var(--leading-tight);
+}
+
+.prosemirror h1:first-child,
+.prosemirror h2:first-child,
+.prosemirror h3:first-child {
+  margin-top: 0;
+}
+
+/* Paragraphs */
+.prosemirror p {
+  margin: var(--space-2) 0;
+}
+
+/* Lists */
+.prosemirror ul,
+.prosemirror ol {
+  padding-left: var(--space-6);
+  margin: var(--space-2) 0;
+}
+
+.prosemirror li {
+  margin: var(--space-1) 0;
+}
+
+/* Task list */
+.prosemirror ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+}
+
+.prosemirror ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.prosemirror ul[data-type="taskList"] li label {
+  margin-top: 2px;
+}
+
+/* Blockquote */
+.prosemirror blockquote {
+  border-left: 3px solid var(--color-primary);
+  padding-left: var(--space-4);
+  margin: var(--space-3) 0;
+  color: var(--color-text-secondary);
+}
+
+/* Code */
+.prosemirror code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background-color: var(--color-bg-secondary);
+  padding: 1px 4px;
+  border-radius: var(--radius-sm);
+}
+
+.prosemirror pre {
+  background-color: #1e1e2e;
+  color: #cdd6f4;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  margin: var(--space-3) 0;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+}
+
+.prosemirror pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* Horizontal rule */
+.prosemirror hr {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: var(--space-6) 0;
+}
+
+/* Links */
+.link {
+  color: var(--color-primary);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Placeholder */
+.prosemirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--color-text-muted);
+  pointer-events: none;
+  height: 0;
+}
+
+/* Highlight */
+.prosemirror mark {
+  background-color: var(--color-warning-light);
+  padding: 1px 2px;
+  border-radius: 2px;
+}
+
+/* Strong / Emphasis */
+.prosemirror strong {
+  font-weight: var(--font-bold);
+}
+
+.prosemirror em {
+  font-style: italic;
+}

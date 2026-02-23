@@ -1,0 +1,315 @@
+.container {
+  padding-top: var(--space-4);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+}
+
+.subtitle {
+  margin: 4px 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.addCardBtn {
+  padding: var(--space-2) var(--space-4);
+  border: none;
+  border-radius: var(--radius-md);
+  background-color: var(--color-primary);
+  color: var(--color-text-inverse);
+  cursor: pointer;
+  font-weight: var(--font-medium);
+}
+
+.addCardBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.empty {
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-4);
+}
+
+.card {
+  --todo-card-text: #1f2937;
+  --todo-card-text-muted: rgba(31, 41, 55, 0.72);
+  --todo-card-chip-bg: rgba(255, 255, 255, 0.68);
+  --todo-card-chip-border: rgba(0, 0, 0, 0.1);
+  --todo-card-input-bg: rgba(255, 255, 255, 0.68);
+  --todo-card-check-bg: rgba(255, 255, 255, 0.78);
+  border-radius: 18px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 260px;
+  transform: rotate(var(--card-tilt, -0.4deg));
+}
+
+.card:nth-child(2n) { --card-tilt: 0.5deg; }
+.card:nth-child(3n) { --card-tilt: -0.2deg; }
+
+.card_yellow {
+  background: linear-gradient(180deg, #fff9bf, #fff4a6);
+}
+
+.card_mint {
+  background: linear-gradient(180deg, #d3f9d8, #c3f3ca);
+}
+
+.card_blue {
+  background: linear-gradient(180deg, #dbeafe, #c7e0ff);
+}
+
+.card_rose {
+  background: linear-gradient(180deg, #ffe3e3, #ffd1d1);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.cardTitleInput {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  border: none;
+  background: transparent;
+  color: var(--todo-card-text);
+  outline: none;
+  padding: 2px 0;
+}
+
+.cardTitleInput:disabled {
+  opacity: 1;
+}
+
+.deleteCardBtn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--todo-card-chip-bg);
+  cursor: pointer;
+  color: var(--color-text-muted);
+}
+
+.cardMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.privacyChip {
+  font-size: 11px;
+  border-radius: var(--radius-full);
+  padding: 2px 8px;
+  border: 1px solid transparent;
+}
+
+.sharedChip {
+  background-color: rgba(34, 197, 94, 0.12);
+  color: #166534;
+  border-color: rgba(22, 101, 52, 0.16);
+}
+
+.privateChip {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--todo-card-text-muted);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.ownerText {
+  font-size: 11px;
+  color: var(--todo-card-text-muted);
+}
+
+.metaBtn {
+  margin-left: auto;
+  border: 1px solid var(--todo-card-chip-border);
+  border-radius: var(--radius-full);
+  background: var(--todo-card-chip-bg);
+  font-size: 11px;
+  padding: 3px 8px;
+  cursor: pointer;
+  color: var(--todo-card-text);
+}
+
+.itemList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 80px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.check {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  background: var(--todo-card-check-bg);
+  cursor: pointer;
+  color: #166534;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.checkDone {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(22, 101, 52, 0.2);
+}
+
+.itemText {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: var(--text-sm);
+  color: var(--todo-card-text);
+  padding: 2px 0;
+}
+
+.itemTextDone {
+  text-decoration: line-through;
+  color: var(--todo-card-text-muted);
+}
+
+.removeItemBtn {
+  border: none;
+  background: transparent;
+  color: var(--todo-card-text-muted);
+  cursor: pointer;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-full);
+}
+
+.addItemForm {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.addItemInput {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--todo-card-input-bg);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  font-size: var(--text-sm);
+  color: var(--todo-card-text);
+  outline: none;
+}
+
+.addItemBtn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--todo-card-check-bg);
+  color: var(--todo-card-text);
+  cursor: pointer;
+  font-size: var(--text-lg);
+}
+
+.addItemBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+[data-theme='dark'] .card {
+  border-color: rgba(0, 0, 0, 0.35);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme='dark'] .card_yellow {
+  --todo-card-text: #fef3c7;
+  --todo-card-text-muted: rgba(254, 243, 199, 0.78);
+  --todo-card-chip-bg: rgba(17, 17, 17, 0.22);
+  --todo-card-chip-border: rgba(254, 243, 199, 0.18);
+  --todo-card-input-bg: rgba(17, 17, 17, 0.22);
+  --todo-card-check-bg: rgba(17, 17, 17, 0.28);
+  background: linear-gradient(180deg, #8a6512, #6b4c10);
+}
+
+[data-theme='dark'] .card_mint {
+  --todo-card-text: #dcfce7;
+  --todo-card-text-muted: rgba(220, 252, 231, 0.78);
+  --todo-card-chip-bg: rgba(17, 17, 17, 0.22);
+  --todo-card-chip-border: rgba(220, 252, 231, 0.16);
+  --todo-card-input-bg: rgba(17, 17, 17, 0.22);
+  --todo-card-check-bg: rgba(17, 17, 17, 0.28);
+  background: linear-gradient(180deg, #23634b, #1b4d3a);
+}
+
+[data-theme='dark'] .card_blue {
+  --todo-card-text: #dbeafe;
+  --todo-card-text-muted: rgba(219, 234, 254, 0.78);
+  --todo-card-chip-bg: rgba(17, 17, 17, 0.24);
+  --todo-card-chip-border: rgba(219, 234, 254, 0.16);
+  --todo-card-input-bg: rgba(17, 17, 17, 0.24);
+  --todo-card-check-bg: rgba(17, 17, 17, 0.3);
+  background: linear-gradient(180deg, #214d85, #193a67);
+}
+
+[data-theme='dark'] .card_rose {
+  --todo-card-text: #ffe4e6;
+  --todo-card-text-muted: rgba(255, 228, 230, 0.78);
+  --todo-card-chip-bg: rgba(17, 17, 17, 0.22);
+  --todo-card-chip-border: rgba(255, 228, 230, 0.16);
+  --todo-card-input-bg: rgba(17, 17, 17, 0.22);
+  --todo-card-check-bg: rgba(17, 17, 17, 0.28);
+  background: linear-gradient(180deg, #8b3a4c, #6f2f3d);
+}
+
+@media (max-width: 700px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
