@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useProfile } from '@/components/providers/profile-provider'
 import {
@@ -28,7 +28,8 @@ export function TodosClient({ cards, itemsByCardId, ownerNames }: Props) {
 
   async function handleCreateCard() {
     setCreating(true)
-    await createTodoCard({ is_shared: true })
+    const desiredTitle = window.prompt('Name this sticky list', 'New To Do')?.trim()
+    await createTodoCard({ is_shared: true, title: desiredTitle || 'New To Do' })
     setCreating(false)
     router.refresh()
   }
@@ -57,7 +58,7 @@ export function TodosClient({ cards, itemsByCardId, ownerNames }: Props) {
               card={card}
               items={itemsByCardId[card.id] ?? []}
               ownerName={ownerNames[card.owner_id]}
-              canEdit={card.owner_id === profile.userId}
+              canEdit={card.is_shared || card.owner_id === profile.userId}
             />
           ))}
         </div>
@@ -82,6 +83,7 @@ function TodoCard({
   const [newItem, setNewItem] = useState('')
   const [savingTitle, setSavingTitle] = useState(false)
   const [adding, setAdding] = useState(false)
+  const titleInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     setTitle(card.title)
@@ -125,6 +127,7 @@ function TodoCard({
     <section className={`${styles.card} ${styles[`card_${normalizeColor(card.color)}`] ?? ''}`}>
       <div className={styles.cardHeader}>
         <input
+          ref={titleInputRef}
           className={styles.cardTitleInput}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -136,7 +139,22 @@ function TodoCard({
             }
           }}
           disabled={!canEdit || savingTitle}
+          aria-label="Sticky list name"
+          title={canEdit ? 'Rename sticky list' : undefined}
         />
+        {canEdit && (
+          <button
+            type="button"
+            className={styles.renameCardBtn}
+            onClick={() => {
+              titleInputRef.current?.focus()
+              titleInputRef.current?.select()
+            }}
+            title="Rename list"
+          >
+            Rename
+          </button>
+        )}
         {canEdit && (
           <button
             className={styles.deleteCardBtn}

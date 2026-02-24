@@ -11,10 +11,11 @@ import styles from './chat-layout.module.css'
 type ChatLayoutProps = {
   threads: ThreadRow[]
   threadOwnerNames: Record<string, string>
+  rightSidebar?: React.ReactNode
   children: React.ReactNode
 }
 
-export function ChatLayout({ threads, threadOwnerNames, children }: ChatLayoutProps) {
+export function ChatLayout({ threads, threadOwnerNames, rightSidebar, children }: ChatLayoutProps) {
   const router = useRouter()
   const profile = useProfile()
   const models = getAvailableModels(profile.role)
@@ -30,7 +31,7 @@ export function ChatLayout({ threads, threadOwnerNames, children }: ChatLayoutPr
   }
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} ${rightSidebar ? styles.containerWithRight : ''}`} data-full-width="human-chat">
       <aside className={styles.sidebar}>
         <div className={styles.sidebarHeader}>
           <h2 className={styles.sidebarTitle}>Chats</h2>
@@ -63,6 +64,7 @@ export function ChatLayout({ threads, threadOwnerNames, children }: ChatLayoutPr
       <div className={styles.main}>
         {children}
       </div>
+      {rightSidebar && <aside className={styles.rightSidebar}>{rightSidebar}</aside>}
     </div>
   )
 }

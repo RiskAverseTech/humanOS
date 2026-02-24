@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { logActivityEvent } from '@/lib/activity/events'
 
 export type DocumentRow = {
   id: string
@@ -102,6 +103,15 @@ export async function createDocumentRecord(input: {
   }
 
   revalidatePath('/vault')
+  void logActivityEvent({
+    actorUserId: user.id,
+    category: 'vault',
+    entityType: 'document',
+    entityId: data!.id,
+    action: 'created',
+    title: input.file_name,
+    href: '/vault',
+  })
   return data!.id
 }
 
@@ -116,6 +126,9 @@ export async function updateDocument(
   }
 ) {
   const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   const { error } = await supabase
     .from('documents')
@@ -128,17 +141,31 @@ export async function updateDocument(
   }
 
   revalidatePath('/vault')
+  if (user) {
+    void logActivityEvent({
+      actorUserId: user.id,
+      category: 'vault',
+      entityType: 'document',
+      entityId: id,
+      action: 'updated',
+      title: updates.file_name ?? 'Document updated',
+      href: '/vault',
+    })
+  }
   return { success: true }
 }
 
 /** Delete a document and its storage object */
 export async function deleteDocument(id: string) {
   const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   // Get the storage path first
   const { data: doc } = await supabase
     .from('documents')
-    .select('storage_path')
+    .select('storage_path, file_name')
     .eq('id', id)
     .single()
 
@@ -157,6 +184,17 @@ export async function deleteDocument(id: string) {
   }
 
   revalidatePath('/vault')
+  if (user) {
+    void logActivityEvent({
+      actorUserId: user.id,
+      category: 'vault',
+      entityType: 'document',
+      entityId: id,
+      action: 'deleted',
+      title: doc?.file_name || 'Deleted document',
+      href: '/vault',
+    })
+  }
   return { success: true }
 }
 

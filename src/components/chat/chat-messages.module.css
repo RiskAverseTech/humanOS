@@ -161,22 +161,30 @@
   cursor: pointer;
   padding: var(--space-1);
   border-radius: var(--radius-sm);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-fast), background-color var(--transition-fast);
+}
+
+.header:hover .deleteBtn,
+.header:focus-within .deleteBtn {
   opacity: 0.5;
-  transition: opacity var(--transition-fast);
+  pointer-events: auto;
 }
 
 .deleteBtn:hover {
   opacity: 1;
+  background-color: var(--color-surface-hover);
 }
 
-/* Messages area */
+/* Messages area — Discord-style */
 .messages {
   flex: 1;
   overflow-y: auto;
   padding: var(--space-4) 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-1);
 }
 
 .emptyState {
@@ -197,41 +205,88 @@
   color: var(--color-text-muted);
 }
 
-/* Message bubbles */
-.message {
+/* Discord-style message row */
+.messageRow {
   display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  transition: background-color 0.1s ease;
 }
 
-.userMessage {
-  justify-content: flex-end;
-}
-
-.assistantMessage {
-  justify-content: flex-start;
-}
-
-.messageBubble {
-  max-width: 80%;
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-lg);
-  font-size: var(--text-sm);
-  line-height: var(--leading-relaxed);
-}
-
-.userMessage .messageBubble {
-  background-color: var(--color-primary);
-  color: var(--color-text-inverse);
-  border-bottom-right-radius: var(--radius-sm);
-}
-
-.assistantMessage .messageBubble {
+.messageRow:hover {
   background-color: var(--color-bg-secondary);
+}
+
+/* Avatar */
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  display: grid;
+  place-items: center;
+  font-weight: var(--font-semibold);
+  font-size: var(--text-sm);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.avatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatarAi {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+}
+
+.avatarAiIcon {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* Message body */
+.messageBody {
+  min-width: 0;
+  flex: 1;
+}
+
+.messageMeta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-bottom: 2px;
+}
+
+.senderUser {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
   color: var(--color-text);
-  border-bottom-left-radius: var(--radius-sm);
+}
+
+.senderAi {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: #7c3aed;
+}
+
+.timestamp {
+  font-size: 11px;
+  color: var(--color-text-muted);
 }
 
 .messageContent {
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text);
   word-break: break-word;
+  white-space: pre-wrap;
 }
 
 /* Markdown inside assistant messages */
@@ -340,6 +395,104 @@
   cursor: not-allowed;
 }
 
+/* Delete confirmation modal */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: grid;
+  place-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.15s ease;
+}
+
+.modalCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl, 16px);
+  padding: var(--space-6, 24px);
+  width: min(420px, 90vw);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: scaleIn 0.15s ease;
+}
+
+.modalTitle {
+  margin: 0 0 var(--space-2) 0;
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+}
+
+.modalText {
+  margin: 0 0 var(--space-5, 20px) 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: var(--leading-relaxed);
+}
+
+.modalError {
+  margin: 0 0 var(--space-4) 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 30%, var(--color-border));
+  background: color-mix(in srgb, var(--color-danger-light) 75%, var(--color-surface));
+  color: var(--color-danger);
+  font-size: var(--text-xs);
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.modalCancelBtn,
+.modalDeleteBtn {
+  padding: 8px 18px;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.modalCancelBtn {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.modalCancelBtn:hover:not(:disabled) {
+  background: var(--color-surface-hover, var(--color-bg-secondary));
+}
+
+.modalDeleteBtn {
+  background: #ef4444;
+  border: none;
+  color: #fff;
+}
+
+.modalDeleteBtn:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.modalDeleteBtn:disabled,
+.modalCancelBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
 @media (max-width: 768px) {
   .header {
     align-items: flex-start;
@@ -354,7 +507,7 @@
     width: 100%;
   }
 
-  .messageBubble {
-    max-width: 90%;
+  .messageRow {
+    padding: var(--space-2) var(--space-1);
   }
 }

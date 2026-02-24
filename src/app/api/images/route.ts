@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import type { UserRole } from '@/lib/supabase/types'
+import { logActivityEvent } from '@/lib/activity/events'
 
 const DEFAULT_IMAGE_MODEL = 'gpt-image-1.5'
 
@@ -172,6 +173,18 @@ export async function POST(request: Request) {
       })
       .select('id')
       .single()
+
+    if (record?.id) {
+      void logActivityEvent({
+        actorUserId: user.id,
+        category: 'images',
+        entityType: 'image',
+        entityId: record.id,
+        action: mode === 'edit' ? 'updated' : 'created',
+        title: prompt.trim().slice(0, 120),
+        href: '/images',
+      })
+    }
 
     return NextResponse.json({
       id: record?.id,

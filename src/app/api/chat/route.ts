@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getAnthropicClient, getOpenAIClient } from '@/lib/ai/client'
 import { getSystemPrompt, getModelById, getDefaultModelId } from '@/lib/ai/prompts'
 import type { UserRole } from '@/lib/supabase/types'
+import { logActivityEvent } from '@/lib/activity/events'
 
 export const runtime = 'edge'
 
@@ -9,6 +10,7 @@ export const runtime = 'edge'
  * POST /api/chat
  * Streams an AI response for the given thread.
  * Supports both Anthropic (Claude) and OpenAI (GPT) models.
+ * Multiple family members can chat in the same shared thread concurrently.
  *
  * Body: {
  *   threadId: string
@@ -19,7 +21,6 @@ export const runtime = 'edge'
  * Returns: ReadableStream of text chunks (Server-Sent Events format)
  */
 export async function POST(request: Request) {
-  let lockThreadId: string | null = null
   try {
     const supabase = await createClient()
 
@@ -79,10 +80,10 @@ export async function POST(request: Request) {
       )
     }
 
-    // Verify thread access (RLS handles this, but check ownership/shared)
+    // Verify thread access (RLS handles this)
     const { data: thread, error: threadError } = await supabase
       .from('chat_threads')
-      .select('id, owner_id, is_shared, is_generating, generation_started_at')
+      .select('id, owner_id, is_shared')
       .eq('id', threadId)
       .single()
 
@@ -90,47 +91,21 @@ export async function POST(request: Request) {
       return new Response('Thread not found', { status: 404 })
     }
 
-    const staleMs = 2 * 60 * 1000
-    if (
-      thread.is_generating &&
-      thread.generation_started_at &&
-      Date.now() - new Date(thread.generation_started_at).getTime() > staleMs
-    ) {
-      await supabase
-        .from('chat_threads')
-        .update({ is_generating: false, generation_started_at: null })
-        .eq('id', threadId)
-    }
-
-    const { data: lockRows, error: lockError } = await supabase
-      .from('chat_threads')
-      .update({
-        is_generating: true,
-        generation_started_at: new Date().toISOString(),
-      })
-      .eq('id', threadId)
-      .eq('is_generating', false)
-      .select('id')
-
-    if (lockError) {
-      console.error('Chat lock error:', lockError)
-      return new Response('Could not start generation', { status: 500 })
-    }
-
-    if (!lockRows || lockRows.length === 0) {
-      return new Response(
-        'Someone is already generating a response in this chat. Please wait a moment.',
-        { status: 409 }
-      )
-    }
-
-    lockThreadId = threadId
-
-    // Save the user's message
+    // Save the user's message with sender_id
     await supabase.from('chat_messages').insert({
       thread_id: threadId,
       role: 'user',
       content: message,
+      sender_id: user.id,
+    })
+    void logActivityEvent({
+      actorUserId: user.id,
+      category: 'ai_chat',
+      entityType: 'ai_chat_message',
+      entityId: threadId,
+      action: 'message_posted',
+      title: message.slice(0, 80),
+      href: `/chat/${threadId}`,
     })
 
     // Fetch conversation history for context
@@ -185,16 +160,6 @@ export async function POST(request: Request) {
             encoder.encode(`data: ${JSON.stringify({ error: errMsg })}\n\n`)
           )
           controller.close()
-        } finally {
-          if (lockThreadId) {
-            await supabase
-              .from('chat_threads')
-              .update({
-                is_generating: false,
-                generation_started_at: null,
-              })
-              .eq('id', lockThreadId)
-          }
         }
       },
     })
@@ -208,20 +173,6 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     console.error('Chat API error:', error)
-    if (lockThreadId) {
-      try {
-        const supabase = await createClient()
-        await supabase
-          .from('chat_threads')
-          .update({
-            is_generating: false,
-            generation_started_at: null,
-          })
-          .eq('id', lockThreadId)
-      } catch {
-        // ignore lock release errors in outer catch
-      }
-    }
     return new Response('Internal server error', { status: 500 })
   }
 }

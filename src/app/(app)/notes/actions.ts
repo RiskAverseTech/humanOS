@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { logActivityEvent } from '@/lib/activity/events'
 
 export type NoteRow = {
   id: string
@@ -99,6 +100,15 @@ export async function createNote(input: {
   }
 
   revalidatePath('/notes')
+  void logActivityEvent({
+    actorUserId: user.id,
+    category: 'notes',
+    entityType: 'note',
+    entityId: data!.id,
+    action: 'created',
+    title: input.title ?? 'Untitled',
+    href: `/notes/${data!.id}`,
+  })
   return data!.id
 }
 
@@ -111,9 +121,15 @@ export async function updateNote(
     folder_path?: string | null
     is_shared?: boolean
     tags?: string[]
+  },
+  options?: {
+    logEvent?: boolean
   }
 ) {
   const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   const { error } = await supabase
     .from('notes')
@@ -127,12 +143,27 @@ export async function updateNote(
 
   revalidatePath('/notes')
   revalidatePath(`/notes/${id}`)
+  if (user && options?.logEvent !== false) {
+    void logActivityEvent({
+      actorUserId: user.id,
+      category: 'notes',
+      entityType: 'note',
+      entityId: id,
+      action: 'updated',
+      title: updates.title ?? 'Note updated',
+      href: `/notes/${id}`,
+    })
+  }
   return { success: true }
 }
 
 /** Delete a note */
 export async function deleteNote(id: string) {
   const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const { data: existing } = await supabase.from('notes').select('title').eq('id', id).maybeSingle()
 
   const { error } = await supabase
     .from('notes')
@@ -145,6 +176,17 @@ export async function deleteNote(id: string) {
   }
 
   revalidatePath('/notes')
+  if (user) {
+    void logActivityEvent({
+      actorUserId: user.id,
+      category: 'notes',
+      entityType: 'note',
+      entityId: id,
+      action: 'deleted',
+      title: existing?.title || 'Deleted note',
+      href: '/notes',
+    })
+  }
   return { success: true }
 }
 

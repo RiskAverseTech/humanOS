@@ -67,3 +67,24 @@ export async function getProfileNamesByUserIds(userIds: string[]): Promise<Recor
   }
   return map
 }
+
+/**
+ * Fetch avatar URLs for a set of user IDs.
+ * Returns raw avatar_url values (may be storage paths or full URLs).
+ */
+export async function getProfileAvatarsByUserIds(userIds: string[]): Promise<Record<string, string | null>> {
+  const uniqueIds = Array.from(new Set(userIds.filter(Boolean)))
+  if (uniqueIds.length === 0) return {}
+
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('profiles')
+    .select('user_id, avatar_url')
+    .in('user_id', uniqueIds)
+
+  const map: Record<string, string | null> = {}
+  for (const row of data ?? []) {
+    map[row.user_id] = row.avatar_url
+  }
+  return map
+}

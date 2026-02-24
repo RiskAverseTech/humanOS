@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { logActivityEvent } from '@/lib/activity/events'
 
 export type ThreadRow = {
   id: string
@@ -19,6 +20,7 @@ export type MessageRow = {
   thread_id: string
   role: 'user' | 'assistant' | 'system'
   content: string
+  sender_id: string | null
   created_at: string
 }
 
@@ -100,6 +102,15 @@ export async function createThread(input?: {
   }
 
   revalidatePath('/chat')
+  void logActivityEvent({
+    actorUserId: user.id,
+    category: 'ai_chat',
+    entityType: 'ai_chat_thread',
+    entityId: data!.id,
+    action: 'created',
+    title: input?.title ?? 'New Chat',
+    href: `/chat/${data!.id}`,
+  })
   return data!.id
 }
 
@@ -113,6 +124,9 @@ export async function updateThread(
   }
 ) {
   const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   const { error } = await supabase
     .from('chat_threads')
@@ -125,12 +139,27 @@ export async function updateThread(
   }
 
   revalidatePath('/chat')
+  if (user) {
+    void logActivityEvent({
+      actorUserId: user.id,
+      category: 'ai_chat',
+      entityType: 'ai_chat_thread',
+      entityId: id,
+      action: 'updated',
+      title: updates.title ?? (updates.is_shared !== undefined ? 'AI chat visibility updated' : 'AI chat updated'),
+      href: `/chat/${id}`,
+    })
+  }
   return { success: true }
 }
 
 /** Delete a thread and its messages */
 export async function deleteThread(id: string) {
   const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const { data: thread } = await supabase.from('chat_threads').select('title').eq('id', id).maybeSingle()
 
   const { error } = await supabase
     .from('chat_threads')
@@ -143,5 +172,16 @@ export async function deleteThread(id: string) {
   }
 
   revalidatePath('/chat')
+  if (user) {
+    void logActivityEvent({
+      actorUserId: user.id,
+      category: 'ai_chat',
+      entityType: 'ai_chat_thread',
+      entityId: id,
+      action: 'deleted',
+      title: thread?.title || 'Deleted AI chat',
+      href: '/chat',
+    })
+  }
   return { success: true }
 }

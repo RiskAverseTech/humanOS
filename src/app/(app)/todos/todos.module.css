@@ -107,8 +107,26 @@
   padding: 2px 0;
 }
 
+.cardTitleInput:focus {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
 .cardTitleInput:disabled {
   opacity: 1;
+}
+
+.renameCardBtn {
+  border: 1px solid var(--todo-card-chip-border, rgba(0, 0, 0, 0.1));
+  background: var(--todo-card-chip-bg, rgba(255, 255, 255, 0.65));
+  color: var(--todo-card-text, var(--color-text));
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  padding: 3px 8px;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 .deleteCardBtn {
@@ -261,6 +279,10 @@
 [data-theme='dark'] .card {
   border-color: rgba(0, 0, 0, 0.35);
   box-shadow: 0 14px 28px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme='dark'] .cardTitleInput:focus {
+  background: rgba(0, 0, 0, 0.2);
 }
 
 [data-theme='dark'] .card_yellow {

@@ -2,7 +2,9 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useProfile } from '@/components/providers/profile-provider'
+import { createClient as createBrowserSupabaseClient } from '@/lib/supabase/client'
 import { getAvailableModels } from '@/lib/ai/prompts'
+import { EmojiPickerButton } from '@/components/ui/emoji-picker'
 import type { MessageRow, ThreadRow } from '@/app/(app)/chat/actions'
 import { updateThread, deleteThread } from '@/app/(app)/chat/actions'
 import { useRouter } from 'next/navigation'
@@ -12,9 +14,17 @@ type ChatMessagesProps = {
   thread: ThreadRow
   initialMessages: MessageRow[]
   threadOwnerName?: string
+  memberNames?: Record<string, string>
+  memberAvatars?: Record<string, string | null>
 }
 
-export function ChatMessages({ thread, initialMessages, threadOwnerName }: ChatMessagesProps) {
+export function ChatMessages({
+  thread,
+  initialMessages,
+  threadOwnerName,
+  memberNames,
+  memberAvatars,
+}: ChatMessagesProps) {
   const profile = useProfile()
   const router = useRouter()
   const [messages, setMessages] = useState<MessageRow[]>(initialMessages)
@@ -27,10 +37,40 @@ export function ChatMessages({ thread, initialMessages, threadOwnerName }: ChatM
   const [savingTitle, setSavingTitle] = useState(false)
   const [isShared, setIsShared] = useState(thread.is_shared)
   const [savingPrivacy, setSavingPrivacy] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
+  const [avatarUrls, setAvatarUrls] = useState<Record<string, string>>({})
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const messagesRef = useRef<HTMLDivElement>(null)
+  const initialScrolledThreadRef = useRef<string | null>(null)
 
   const models = getAvailableModels(profile.role)
+
+  const aiDisplayName = getAiDisplayName(thread.model)
+
+  // Load avatar signed URLs
+  useEffect(() => {
+    let active = true
+    async function loadAvatars() {
+      if (!memberAvatars) return
+      const supabase = createBrowserSupabaseClient()
+      const resolved: Record<string, string> = {}
+      for (const [userId, raw] of Object.entries(memberAvatars)) {
+        if (!raw) continue
+        if (/^https?:\/\//i.test(raw)) {
+          resolved[userId] = raw
+        } else {
+          const { data } = await supabase.storage.from('avatars').createSignedUrl(raw, 3600)
+          if (data?.signedUrl) resolved[userId] = data.signedUrl
+        }
+      }
+      if (active) setAvatarUrls(resolved)
+    }
+    void loadAvatars()
+    return () => { active = false }
+  }, [memberAvatars])
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -39,6 +79,17 @@ export function ChatMessages({ thread, initialMessages, threadOwnerName }: ChatM
   useEffect(() => {
     scrollToBottom()
   }, [messages, streamingText, scrollToBottom])
+
+  useEffect(() => {
+    initialScrolledThreadRef.current = null
+  }, [thread.id])
+
+  useEffect(() => {
+    if (!messagesRef.current) return
+    if (initialScrolledThreadRef.current === thread.id) return
+    messagesRef.current.scrollTop = messagesRef.current.scrollHeight
+    initialScrolledThreadRef.current = thread.id
+  }, [thread.id, messages.length, avatarUrls])
 
   // Auto-resize textarea
   useEffect(() => {
@@ -59,6 +110,14 @@ export function ChatMessages({ thread, initialMessages, threadOwnerName }: ChatM
     setIsShared(thread.is_shared)
   }, [thread.id, thread.title, thread.is_shared, isRenaming, savingTitle])
 
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('last_ai_chat_thread_id', thread.id)
+    } catch {
+      // ignore storage errors
+    }
+  }, [thread.id])
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!input.trim() || streaming) return
@@ -74,6 +133,7 @@ export function ChatMessages({ thread, initialMessages, threadOwnerName }: ChatM
       thread_id: thread.id,
       role: 'user',
       content: userMessage,
+      sender_id: profile.userId,
       created_at: new Date().toISOString(),
     }
     setMessages((prev) => [...prev, tempUserMsg])
@@ -145,6 +205,7 @@ export function ChatMessages({ thread, initialMessages, threadOwnerName }: ChatM
         thread_id: thread.id,
         role: 'assistant',
         content: fullText,
+        sender_id: null,
         created_at: new Date().toISOString(),
       }
       setMessages((prev) => [...prev, assistantMsg])
@@ -168,6 +229,7 @@ export function ChatMessages({ thread, initialMessages, threadOwnerName }: ChatM
         thread_id: thread.id,
         role: 'assistant',
         content: message,
+        sender_id: null,
         created_at: new Date().toISOString(),
       }
       setMessages((prev) => [...prev, errMsg])
@@ -178,9 +240,22 @@ export function ChatMessages({ thread, initialMessages, threadOwnerName }: ChatM
   }
 
   async function handleDeleteThread() {
-    if (!confirm('Delete this conversation?')) return
-    await deleteThread(thread.id)
-    router.push('/chat')
+    if (deleting) return
+    setDeleting(true)
+    setDeleteError('')
+    try {
+      const result = await deleteThread(thread.id)
+      if (!result.success) {
+        setDeleteError(result.error || 'Could not delete conversation. Please try again.')
+        return
+      }
+      setShowDeleteModal(false)
+      router.push('/chat')
+    } catch {
+      setDeleteError('Could not delete conversation. Please try again.')
+    } finally {
+      setDeleting(false)
+    }
   }
 
   async function handleRenameSubmit() {
@@ -224,6 +299,69 @@ export function ChatMessages({ thread, initialMessages, threadOwnerName }: ChatM
       e.preventDefault()
       handleSubmit(e)
     }
+  }
+
+  function insertEmoji(emoji: string) {
+    const el = inputRef.current
+    if (!el) {
+      setInput((prev) => `${prev}${emoji}`)
+      return
+    }
+    const start = el.selectionStart ?? input.length
+    const end = el.selectionEnd ?? input.length
+    const next = input.slice(0, start) + emoji + input.slice(end)
+    setInput(next)
+    requestAnimationFrame(() => {
+      el.focus()
+      const pos = start + emoji.length
+      el.setSelectionRange(pos, pos)
+    })
+  }
+
+  function getSenderName(msg: MessageRow): string {
+    if (msg.role === 'assistant') return aiDisplayName
+    if (msg.sender_id && memberNames?.[msg.sender_id]) return memberNames[msg.sender_id]
+    return profile.displayName
+  }
+
+  function formatTimestamp(dateStr: string): string {
+    const d = new Date(dateStr)
+    const now = new Date()
+    const isToday = d.toDateString() === now.toDateString()
+    const yesterday = new Date(now)
+    yesterday.setDate(yesterday.getDate() - 1)
+    const isYesterday = d.toDateString() === yesterday.toDateString()
+
+    const time = d.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })
+    if (isToday) return `Today at ${time}`
+    if (isYesterday) return `Yesterday at ${time}`
+    return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) + ` at ${time}`
+  }
+
+  function renderAvatar(msg: MessageRow) {
+    if (msg.role === 'assistant') {
+      return (
+        <div className={`${styles.avatar} ${styles.avatarAi}`}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/ai.png" alt="" className={styles.avatarImg} />
+        </div>
+      )
+    }
+
+    const userId = msg.sender_id || profile.userId
+    const src = avatarUrls[userId]
+    const name = getSenderName(msg)
+
+    return (
+      <div className={styles.avatar}>
+        {src ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={src} alt="" className={styles.avatarImg} />
+        ) : (
+          name.charAt(0).toUpperCase()
+        )}
+      </div>
+    )
   }
 
   return (
@@ -307,13 +445,20 @@ export function ChatMessages({ thread, initialMessages, threadOwnerName }: ChatM
             </div>
           </div>
         </div>
-        <button className={styles.deleteBtn} onClick={handleDeleteThread} title="Delete thread">
+        <button
+          className={styles.deleteBtn}
+          onClick={() => {
+            setDeleteError('')
+            setShowDeleteModal(true)
+          }}
+          title="Delete thread"
+        >
           🗑
         </button>
       </div>
 
-      {/* Messages */}
-      <div className={styles.messages}>
+      {/* Messages (Discord-style) */}
+      <div className={styles.messages} ref={messagesRef}>
         {messages.length === 0 && !streaming && (
           <div className={styles.emptyState}>
             <p className={styles.emptyIcon}>💬</p>
@@ -322,11 +467,15 @@ export function ChatMessages({ thread, initialMessages, threadOwnerName }: ChatM
         )}
 
         {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`${styles.message} ${msg.role === 'user' ? styles.userMessage : styles.assistantMessage}`}
-          >
-            <div className={styles.messageBubble}>
+          <div key={msg.id} className={styles.messageRow}>
+            {renderAvatar(msg)}
+            <div className={styles.messageBody}>
+              <div className={styles.messageMeta}>
+                <span className={msg.role === 'assistant' ? styles.senderAi : styles.senderUser}>
+                  {getSenderName(msg)}
+                </span>
+                <span className={styles.timestamp}>{formatTimestamp(msg.created_at)}</span>
+              </div>
               <div className={styles.messageContent}>
                 {msg.role === 'user' ? (
                   msg.content
@@ -342,8 +491,16 @@ export function ChatMessages({ thread, initialMessages, threadOwnerName }: ChatM
         ))}
 
         {streaming && streamingText && (
-          <div className={`${styles.message} ${styles.assistantMessage}`}>
-            <div className={styles.messageBubble}>
+          <div className={styles.messageRow}>
+            <div className={`${styles.avatar} ${styles.avatarAi}`}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/ai.png" alt="" className={styles.avatarImg} />
+            </div>
+            <div className={styles.messageBody}>
+              <div className={styles.messageMeta}>
+                <span className={styles.senderAi}>{aiDisplayName}</span>
+                <span className={styles.timestamp}>Now</span>
+              </div>
               <div className={styles.messageContent}>
                 <div
                   className={styles.markdown}
@@ -360,6 +517,7 @@ export function ChatMessages({ thread, initialMessages, threadOwnerName }: ChatM
 
       {/* Input */}
       <form onSubmit={handleSubmit} className={styles.inputForm}>
+        <EmojiPickerButton onSelect={insertEmoji} disabled={streaming} title="Add emoji to AI chat" />
         <textarea
           ref={inputRef}
           className={styles.textarea}
@@ -378,8 +536,46 @@ export function ChatMessages({ thread, initialMessages, threadOwnerName }: ChatM
           {streaming ? '...' : '↑'}
         </button>
       </form>
+
+      {/* Delete confirmation modal */}
+      {showDeleteModal && (
+        <div className={styles.modalOverlay} onClick={() => !deleting && setShowDeleteModal(false)}>
+          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
+            <h3 className={styles.modalTitle}>Delete Conversation</h3>
+            <p className={styles.modalText}>
+              Are you sure you want to delete <strong>{title}</strong>? This action cannot be undone.
+            </p>
+            {deleteError && <p className={styles.modalError}>{deleteError}</p>}
+            <div className={styles.modalActions}>
+              <button
+                className={styles.modalCancelBtn}
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              <button
+                className={styles.modalDeleteBtn}
+                onClick={handleDeleteThread}
+                disabled={deleting}
+              >
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
+}
+
+function getAiDisplayName(modelId: string): string {
+  const value = modelId.toLowerCase()
+  if (value.includes('claude')) return 'Claude AI'
+  if (value.includes('gpt') || value.includes('openai') || value.includes('o1') || value.includes('o3')) {
+    return 'ChatGPT AI'
+  }
+  return 'AI'
 }
 
 /**

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { logActivityEvent } from '@/lib/activity/events'
 
 export type TodoCardRow = {
   id: string
@@ -90,6 +91,15 @@ export async function createTodoCard(input?: {
   if (error) return { success: false, error: error.message }
   revalidatePath('/todos')
   revalidatePath('/dashboard')
+  void logActivityEvent({
+    actorUserId: user.id,
+    category: 'todos',
+    entityType: 'todo_card',
+    entityId: data.id,
+    action: 'created',
+    title: input?.title ?? 'New To Do',
+    href: '/todos',
+  })
   return { success: true, id: data.id }
 }
 
@@ -98,22 +108,54 @@ export async function updateTodoCard(
   updates: Partial<Pick<TodoCardRow, 'title' | 'is_shared' | 'color'>>
 ) {
   const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   const { error } = await supabase.from('todo_cards').update(updates).eq('id', id)
   if (error) return { success: false, error: error.message }
   revalidatePath('/todos')
+  if (user) {
+    void logActivityEvent({
+      actorUserId: user.id,
+      category: 'todos',
+      entityType: 'todo_card',
+      entityId: id,
+      action: 'updated',
+      title: updates.title ?? 'To Do list updated',
+      href: '/todos',
+    })
+  }
   return { success: true }
 }
 
 export async function deleteTodoCard(id: string) {
   const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const { data: existing } = await supabase.from('todo_cards').select('title').eq('id', id).maybeSingle()
   const { error } = await supabase.from('todo_cards').delete().eq('id', id)
   if (error) return { success: false, error: error.message }
   revalidatePath('/todos')
+  if (user) {
+    void logActivityEvent({
+      actorUserId: user.id,
+      category: 'todos',
+      entityType: 'todo_card',
+      entityId: id,
+      action: 'deleted',
+      title: existing?.title || 'Deleted To Do list',
+      href: '/todos',
+    })
+  }
   return { success: true }
 }
 
 export async function addTodoItem(cardId: string, text: string) {
   const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   const trimmed = text.trim()
   if (!trimmed) return { success: false, error: 'Text is required' as const }
 
@@ -134,6 +176,17 @@ export async function addTodoItem(cardId: string, text: string) {
   if (error) return { success: false, error: error.message }
   await supabase.from('todo_cards').update({ updated_at: new Date().toISOString() }).eq('id', cardId)
   revalidatePath('/todos')
+  if (user) {
+    void logActivityEvent({
+      actorUserId: user.id,
+      category: 'todos',
+      entityType: 'todo_item',
+      entityId: cardId,
+      action: 'message_posted',
+      title: trimmed,
+      href: '/todos',
+    })
+  }
   return { success: true }
 }
 
@@ -142,18 +195,47 @@ export async function updateTodoItem(
   updates: Partial<Pick<TodoItemRow, 'text' | 'is_done' | 'position'>>
 ) {
   const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   const payload = { ...updates }
   if (typeof payload.text === 'string') payload.text = payload.text.trim()
   const { error } = await supabase.from('todo_items').update(payload).eq('id', id)
   if (error) return { success: false, error: error.message }
   revalidatePath('/todos')
+  if (user) {
+    void logActivityEvent({
+      actorUserId: user.id,
+      category: 'todos',
+      entityType: 'todo_item',
+      entityId: id,
+      action: 'updated',
+      title: typeof payload.text === 'string' ? payload.text : 'To Do item updated',
+      href: '/todos',
+    })
+  }
   return { success: true }
 }
 
 export async function deleteTodoItem(id: string) {
   const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const { data: existing } = await supabase.from('todo_items').select('text').eq('id', id).maybeSingle()
   const { error } = await supabase.from('todo_items').delete().eq('id', id)
   if (error) return { success: false, error: error.message }
   revalidatePath('/todos')
+  if (user) {
+    void logActivityEvent({
+      actorUserId: user.id,
+      category: 'todos',
+      entityType: 'todo_item',
+      entityId: id,
+      action: 'deleted',
+      title: existing?.text || 'Deleted To Do item',
+      href: '/todos',
+    })
+  }
   return { success: true }
 }

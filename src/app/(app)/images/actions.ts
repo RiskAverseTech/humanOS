@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { logActivityEvent } from '@/lib/activity/events'
 
 export type GeneratedImageRow = {
   id: string
@@ -50,6 +51,10 @@ export async function getImageUrl(storagePath: string): Promise<string | null> {
 /** Delete a generated image */
 export async function deleteGeneratedImage(id: string, storagePath: string) {
   const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const { data: existing } = await supabase.from('generated_images').select('prompt').eq('id', id).maybeSingle()
 
   await supabase.storage.from('generated-images').remove([storagePath])
 
@@ -64,5 +69,16 @@ export async function deleteGeneratedImage(id: string, storagePath: string) {
   }
 
   revalidatePath('/images')
+  if (user) {
+    void logActivityEvent({
+      actorUserId: user.id,
+      category: 'images',
+      entityType: 'image',
+      entityId: id,
+      action: 'deleted',
+      title: existing?.prompt || 'Deleted image',
+      href: '/images',
+    })
+  }
   return { success: true }
 }

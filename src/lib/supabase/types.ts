@@ -191,6 +191,7 @@ export type Database = {
           thread_id: string
           role: string
           content: string
+          sender_id: string | null
           created_at: string
         }
         Insert: {
@@ -198,6 +199,7 @@ export type Database = {
           thread_id: string
           role: string
           content: string
+          sender_id?: string | null
           created_at?: string
         }
         Update: {
@@ -205,6 +207,7 @@ export type Database = {
           thread_id?: string
           role?: string
           content?: string
+          sender_id?: string | null
           created_at?: string
         }
         Relationships: [
@@ -246,6 +249,50 @@ export type Database = {
           {
             foreignKeyName: 'generated_images_owner_id_fkey'
             columns: ['owner_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      activity_events: {
+        Row: {
+          id: string
+          actor_user_id: string
+          category: NotificationCategory
+          entity_type: string
+          entity_id: string
+          action: string
+          title: string
+          href: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          actor_user_id: string
+          category: NotificationCategory
+          entity_type: string
+          entity_id: string
+          action: string
+          title: string
+          href: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          actor_user_id?: string
+          category?: NotificationCategory
+          entity_type?: string
+          entity_id?: string
+          action?: string
+          title?: string
+          href?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'activity_events_actor_user_id_fkey'
+            columns: ['actor_user_id']
             isOneToOne: false
             referencedRelation: 'users'
             referencedColumns: ['id']

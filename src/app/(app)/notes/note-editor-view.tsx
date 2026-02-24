@@ -41,7 +41,7 @@ export function NoteEditorView({ note, isNew, initialFolder }: NoteEditorViewPro
       if (saveTimer.current) clearTimeout(saveTimer.current)
       saveTimer.current = setTimeout(async () => {
         setSaving(true)
-        await updateNote(noteId, { content: updatedContent })
+        await updateNote(noteId, { content: updatedContent }, { logEvent: false })
         setLastSaved(new Date())
         setSaving(false)
       }, 1500)

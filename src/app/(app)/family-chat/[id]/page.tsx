@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
-import { getProfileNamesByUserIds } from '@/lib/supabase/profile'
+import { getProfileNamesByUserIds, getProfileAvatarsByUserIds } from '@/lib/supabase/profile'
 import { FamilyChatRoom } from '../room'
+import { FamilyChatMembersPanel } from '../members-panel'
 import { FamilyChatShell } from '../shell'
 import { getFamilyChannel, getFamilyChannels, getFamilyMessages } from '../actions'
 
@@ -18,17 +19,40 @@ export default async function FamilyChatChannelPage({ params }: Props) {
 
   if (!channel) notFound()
 
-  const ownerNames = await getProfileNamesByUserIds([
+  const allUserIds = [
     ...channels.map((c) => c.owner_id),
     ...messages.map((m) => m.author_id),
+  ]
+
+  const [ownerNames, ownerAvatars] = await Promise.all([
+    getProfileNamesByUserIds(allUserIds),
+    getProfileAvatarsByUserIds(allUserIds),
   ])
 
+  const participantIds = Array.from(new Set([channel.owner_id, ...messages.map((m) => m.author_id)]))
+  const participants = participantIds
+    .map((userId) => ({
+      userId,
+      name: ownerNames[userId] ?? 'Unknown',
+      avatarUrl: ownerAvatars[userId] ?? null,
+      badge: userId === channel.owner_id ? 'Owner' : undefined,
+    }))
+    .sort((a, b) => {
+      if (a.badge === 'Owner' && b.badge !== 'Owner') return -1
+      if (a.badge !== 'Owner' && b.badge === 'Owner') return 1
+      return a.name.localeCompare(b.name)
+    })
+
   return (
-    <FamilyChatShell channels={channels}>
+    <FamilyChatShell
+      channels={channels}
+      rightSidebar={<FamilyChatMembersPanel members={participants} />}
+    >
       <FamilyChatRoom
         channel={channel}
         messages={messages}
         ownerNames={ownerNames}
+        ownerAvatars={ownerAvatars}
       />
     </FamilyChatShell>
   )

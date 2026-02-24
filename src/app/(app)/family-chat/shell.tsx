@@ -8,9 +8,11 @@ import styles from './shell.module.css'
 
 export function FamilyChatShell({
   channels,
+  rightSidebar,
   children,
 }: {
   channels: FamilyChannelRow[]
+  rightSidebar?: React.ReactNode
   children: React.ReactNode
 }) {
   const router = useRouter()
@@ -25,7 +27,10 @@ export function FamilyChatShell({
   }
 
   return (
-    <div className={styles.container}>
+    <div
+      className={`${styles.container} ${rightSidebar ? styles.containerWithRight : ''}`}
+      data-full-width="human-chat"
+    >
       <aside className={styles.sidebar}>
         <div className={styles.sidebarHeader}>
           <div>
@@ -53,6 +58,7 @@ export function FamilyChatShell({
       </aside>
 
       <div className={styles.main}>{children}</div>
+      {rightSidebar && <aside className={styles.rightSidebar}>{rightSidebar}</aside>}
     </div>
   )
 }

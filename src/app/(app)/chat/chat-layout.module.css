@@ -1,9 +1,14 @@
 .container {
   display: grid;
-  grid-template-columns: 240px 1fr;
+  grid-template-columns: 240px minmax(0, 1fr);
   gap: var(--space-4);
   height: calc(100vh - var(--space-12));
   padding-top: var(--space-2);
+  width: 100%;
+}
+
+.containerWithRight {
+  grid-template-columns: 240px minmax(0, 1fr) 240px;
 }
 
 @media (max-width: 768px) {
@@ -12,6 +17,10 @@
   }
 
   .sidebar {
+    display: none;
+  }
+
+  .rightSidebar {
     display: none;
   }
 }
@@ -77,4 +86,11 @@
 
 .main {
   overflow: hidden;
+}
+
+.rightSidebar {
+  min-width: 0;
+  border-left: 1px solid var(--color-border);
+  padding-left: var(--space-3);
+  overflow-y: auto;
 }

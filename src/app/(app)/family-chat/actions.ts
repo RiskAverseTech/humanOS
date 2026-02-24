@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { logActivityEvent } from '@/lib/activity/events'
 
 export type FamilyChannelRow = {
   id: string
@@ -18,6 +19,14 @@ export type FamilyMessageRow = {
   content: string | null
   image_storage_path: string | null
   image_mime_type: string | null
+  created_at: string
+}
+
+export type FamilyGeneratedImagePickerItem = {
+  id: string
+  prompt: string
+  storage_path: string
+  preview_url: string | null
   created_at: string
 }
 
@@ -92,11 +101,23 @@ export async function createFamilyChannel(input?: { name?: string }): Promise<st
   }
 
   revalidatePath('/family-chat')
+  void logActivityEvent({
+    actorUserId: user.id,
+    category: 'human_chat',
+    entityType: 'human_chat_channel',
+    entityId: data.id,
+    action: 'created',
+    title: input?.name?.trim() || 'general',
+    href: `/family-chat/${data.id}`,
+  })
   return data.id
 }
 
 export async function renameFamilyChannel(channelId: string, name: string) {
   const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   const trimmed = name.trim()
   if (!trimmed) return { success: false, error: 'Name is required' }
 
@@ -108,6 +129,17 @@ export async function renameFamilyChannel(channelId: string, name: string) {
   if (error) return { success: false, error: error.message }
   revalidatePath('/family-chat')
   revalidatePath(`/family-chat/${channelId}`)
+  if (user) {
+    void logActivityEvent({
+      actorUserId: user.id,
+      category: 'human_chat',
+      entityType: 'human_chat_channel',
+      entityId: channelId,
+      action: 'updated',
+      title: trimmed,
+      href: `/family-chat/${channelId}`,
+    })
+  }
   return { success: true }
 }
 
@@ -145,11 +177,23 @@ export async function postFamilyMessage(input: {
 
   revalidatePath('/family-chat')
   revalidatePath(`/family-chat/${input.channelId}`)
+  void logActivityEvent({
+    actorUserId: user.id,
+    category: 'human_chat',
+    entityType: 'human_chat_message',
+    entityId: input.channelId,
+    action: 'message_posted',
+    title: content ?? (input.imageStoragePath ? 'Shared an image' : 'Message'),
+    href: `/family-chat/${input.channelId}`,
+  })
   return { success: true }
 }
 
 export async function deleteFamilyMessage(messageId: string) {
   const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   const { data: msg } = await supabase
     .from('family_chat_messages')
     .select('channel_id, image_storage_path')
@@ -169,6 +213,17 @@ export async function deleteFamilyMessage(messageId: string) {
 
   revalidatePath('/family-chat')
   if (msg?.channel_id) revalidatePath(`/family-chat/${msg.channel_id}`)
+  if (user) {
+    void logActivityEvent({
+      actorUserId: user.id,
+      category: 'human_chat',
+      entityType: 'human_chat_message',
+      entityId: messageId,
+      action: 'deleted',
+      title: 'Deleted message',
+      href: msg?.channel_id ? `/family-chat/${msg.channel_id}` : '/family-chat',
+    })
+  }
   return { success: true }
 }
 
@@ -183,4 +238,102 @@ export async function getFamilyChatUploadUrl(storagePath: string): Promise<strin
     return null
   }
   return data.signedUrl
+}
+
+export async function getGeneratedImagesForFamilyChatPicker(limit = 24): Promise<FamilyGeneratedImagePickerItem[]> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return []
+
+  const { data, error } = await supabase
+    .from('generated_images')
+    .select('id, prompt, storage_path, created_at')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  if (error || !data) {
+    console.error('Error fetching generated images for picker:', error)
+    return []
+  }
+
+  const items: FamilyGeneratedImagePickerItem[] = []
+  for (const row of data) {
+    const { data: signed } = await supabase.storage
+      .from('generated-images')
+      .createSignedUrl(row.storage_path, 3600)
+
+    items.push({
+      id: row.id,
+      prompt: row.prompt,
+      storage_path: row.storage_path,
+      created_at: row.created_at,
+      preview_url: signed?.signedUrl ?? null,
+    })
+  }
+
+  return items
+}
+
+export async function copyGeneratedImageToFamilyChatUpload(imageId: string): Promise<{
+  success: boolean
+  error?: string
+  attachment?: {
+    storagePath: string
+    mimeType: string
+    previewUrl: string
+  }
+}> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
+
+  const { data: image, error: imageError } = await supabase
+    .from('generated_images')
+    .select('id, storage_path')
+    .eq('id', imageId)
+    .single()
+
+  if (imageError || !image) {
+    return { success: false, error: 'Image not found' }
+  }
+
+  const { data: blob, error: downloadError } = await supabase.storage
+    .from('generated-images')
+    .download(image.storage_path)
+
+  if (downloadError || !blob) {
+    return { success: false, error: downloadError?.message || 'Could not load generated image' }
+  }
+
+  const ext = image.storage_path.split('.').pop() || 'png'
+  const storagePath = `${user.id}/${Date.now()}-gallery-${Math.random().toString(36).slice(2)}.${ext}`
+
+  const { error: uploadError } = await supabase.storage
+    .from('chat-uploads')
+    .upload(storagePath, blob, { cacheControl: '3600', upsert: false, contentType: blob.type || 'image/png' })
+
+  if (uploadError) {
+    return { success: false, error: uploadError.message }
+  }
+
+  const { data: signed, error: signedError } = await supabase.storage
+    .from('chat-uploads')
+    .createSignedUrl(storagePath, 3600)
+
+  if (signedError || !signed?.signedUrl) {
+    return { success: false, error: signedError?.message || 'Could not preview selected image' }
+  }
+
+  return {
+    success: true,
+    attachment: {
+      storagePath,
+      mimeType: blob.type || 'image/png',
+      previewUrl: signed.signedUrl,
+    },
+  }
 }

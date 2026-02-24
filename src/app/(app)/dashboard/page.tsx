@@ -213,7 +213,7 @@ export default async function DashboardPage() {
       <section className={styles.billCard} aria-label="Daddy Bill cost estimate">
         <div className={styles.billHeader}>
           <div>
-            <h2 className={styles.billTitle}>Daddy&apos;s Bil</h2>
+            <h2 className={styles.billTitle}>Daddy&apos;s AI Bill</h2>
             <p className={styles.billSubtitle}>Estimated platform spend (chat + image APIs)</p>
           </div>
           <div className={styles.billTotal}>
@@ -247,7 +247,7 @@ export default async function DashboardPage() {
       {/* Recent activity */}
       <div className={styles.activitySection}>
         <Link href="/activity" className={styles.sectionTitleLink}>
-          <h2 className={styles.sectionTitle}>Recent Activity</h2>
+          <h2 className={styles.sectionTitle}>Your Recent Activity</h2>
         </Link>
         {recentActivity.length === 0 ? (
           <p className={styles.emptyText}>No activity yet. Start by creating a note or chat!</p>
