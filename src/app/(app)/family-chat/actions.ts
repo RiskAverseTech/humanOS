@@ -19,6 +19,7 @@ export type FamilyMessageRow = {
   content: string | null
   image_storage_path: string | null
   image_mime_type: string | null
+  reply_to_message_id: string | null
   created_at: string
 }
 
@@ -174,6 +175,7 @@ export async function postFamilyMessage(input: {
   content?: string | null
   imageStoragePath?: string | null
   imageMimeType?: string | null
+  replyToMessageId?: string | null
 }) {
   const supabase = await createClient()
   const {
@@ -192,6 +194,7 @@ export async function postFamilyMessage(input: {
     content,
     image_storage_path: input.imageStoragePath ?? null,
     image_mime_type: input.imageMimeType ?? null,
+    reply_to_message_id: input.replyToMessageId ?? null,
   })
 
   if (error) return { success: false, error: error.message }

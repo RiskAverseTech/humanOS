@@ -33,6 +33,8 @@ type UploadedAttachment = {
   previewUrl: string
 }
 
+const QUICK_REACTIONS = ['👍', '❤️', '😂'] as const
+
 export function FamilyChatRoom({
   channel,
   messages: initialMessages,
@@ -60,12 +62,14 @@ export function FamilyChatRoom({
   const [generatedPickerError, setGeneratedPickerError] = useState('')
   const [generatedPickerItems, setGeneratedPickerItems] = useState<FamilyGeneratedImagePickerItem[]>([])
   const [selectingGeneratedImageId, setSelectingGeneratedImageId] = useState<string | null>(null)
+  const [replyingToMessageId, setReplyingToMessageId] = useState<string | null>(null)
   const [reactionsByMessageId, setReactionsByMessageId] = useState(
     initialReactionsByMessageId ?? {} as Record<string, Array<{ emoji: string; userId: string }>>
   )
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const messagesRef = useRef<HTMLDivElement>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
   const initialScrolledForChannelRef = useRef<string | null>(null)
   const prevChannelIdRef = useRef<string | null>(null)
   const initialLoadedImageIdsRef = useRef<Set<string>>(new Set())
@@ -83,6 +87,7 @@ export function FamilyChatRoom({
     if (!messagesRef.current) return
     programmaticScrollRef.current = true
     messagesRef.current.scrollTop = messagesRef.current.scrollHeight
+    messagesEndRef.current?.scrollIntoView({ block: 'end' })
     requestAnimationFrame(() => {
       programmaticScrollRef.current = false
     })
@@ -274,6 +279,7 @@ export function FamilyChatRoom({
       content: input,
       imageStoragePath: attachment?.storagePath,
       imageMimeType: attachment?.mimeType,
+      replyToMessageId: replyingToMessageId,
     })
     setSending(false)
 
@@ -281,6 +287,7 @@ export function FamilyChatRoom({
       setInput('')
       setAttachment(null)
       setUploadError('')
+      setReplyingToMessageId(null)
       router.refresh()
     }
   }
@@ -441,6 +448,20 @@ export function FamilyChatRoom({
     return Array.from(grouped.values()).sort((a, b) => b.count - a.count || a.emoji.localeCompare(b.emoji))
   }
 
+  const messageMap = new Map(messages.map((m) => [m.id, m]))
+
+  function getReplyPreview(messageId: string | null) {
+    if (!messageId) return null
+    return messageMap.get(messageId) ?? null
+  }
+
+  function getMessageSnippet(message: FamilyMessageRow | null) {
+    if (!message) return 'Original message unavailable'
+    if (message.content?.trim()) return message.content.trim()
+    if (message.image_storage_path) return 'Image'
+    return 'Message'
+  }
+
   return (
     <div className={styles.room}>
       <div className={styles.header}>
@@ -504,7 +525,9 @@ export function FamilyChatRoom({
           onScroll={handleMessagesScroll}
           style={{ visibility: hydrated && initialPositioned ? 'visible' : 'hidden' }}
         >
-          {messages.map((msg) => (
+          {messages.map((msg) => {
+            const reactionGroups = getReactionGroups(msg.id)
+            return (
             <div key={msg.id} className={styles.messageRow}>
               <div className={styles.avatar}>
                 {avatarUrls[msg.author_id] ? (
@@ -532,6 +555,17 @@ export function FamilyChatRoom({
                   )}
                 </div>
                 {msg.content && <p className={styles.messageText}>{msg.content}</p>}
+                {msg.reply_to_message_id && (
+                  <button
+                    type="button"
+                    className={styles.replyPreview}
+                    onClick={() => setReplyingToMessageId(msg.reply_to_message_id)}
+                    title="Reply to this reply target"
+                  >
+                    <span className={styles.replyPreviewLabel}>Replying to</span>
+                    <span className={styles.replyPreviewText}>{getMessageSnippet(getReplyPreview(msg.reply_to_message_id))}</span>
+                  </button>
+                )}
                 {msg.image_storage_path && imageUrls[msg.id] && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -542,34 +576,79 @@ export function FamilyChatRoom({
                     onError={() => handleInitialMessageImageReady(msg.id)}
                   />
                 )}
-                <div className={styles.reactionRow}>
-                  {getReactionGroups(msg.id).map((reaction) => (
+                {reactionGroups.length > 0 && (
+                  <div className={styles.reactionRow}>
+                    {reactionGroups.map((reaction) => (
+                      <button
+                        key={`${msg.id}-${reaction.emoji}`}
+                        type="button"
+                        className={`${styles.reactionChip} ${reaction.reactedByMe ? styles.reactionChipActive : ''}`}
+                        onClick={() => void handleToggleReaction(msg.id, reaction.emoji)}
+                        title={reaction.reactedByMe ? 'Remove reaction' : 'React'}
+                      >
+                        <span>{reaction.emoji}</span>
+                        <span className={styles.reactionCount}>{reaction.count}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className={styles.reactionActions}>
+                  <button
+                    type="button"
+                    className={styles.quickReactionBtn}
+                    onClick={() => setReplyingToMessageId(msg.id)}
+                    title="Reply"
+                    aria-label="Reply to message"
+                  >
+                    ↩️
+                  </button>
+                  {QUICK_REACTIONS.map((emoji) => (
                     <button
-                      key={`${msg.id}-${reaction.emoji}`}
+                      key={`${msg.id}-quick-${emoji}`}
                       type="button"
-                      className={`${styles.reactionChip} ${reaction.reactedByMe ? styles.reactionChipActive : ''}`}
-                      onClick={() => void handleToggleReaction(msg.id, reaction.emoji)}
-                      title={reaction.reactedByMe ? 'Remove reaction' : 'React'}
+                      className={styles.quickReactionBtn}
+                      onClick={() => void handleToggleReaction(msg.id, emoji)}
+                      title={`React ${emoji}`}
                     >
-                      <span>{reaction.emoji}</span>
-                      <span className={styles.reactionCount}>{reaction.count}</span>
+                      {emoji}
                     </button>
                   ))}
                   <EmojiPickerButton
                     onSelect={(emoji) => { void handleToggleReaction(msg.id, emoji) }}
                     disabled={sending}
-                    title="React to message"
+                    title="More reactions"
                     compact
                     triggerContent="➕"
+                    panelAlign="right"
                   />
                 </div>
               </div>
             </div>
-          ))}
+            )
+          })}
+          <div ref={messagesEndRef} aria-hidden="true" />
         </div>
       </div>
 
       <form className={styles.composer} onSubmit={handleSubmit}>
+        {replyingToMessageId && (
+          <div className={styles.replyComposerBar}>
+            <div className={styles.replyComposerText}>
+              <span className={styles.replyComposerLabel}>Replying to</span>
+              <span className={styles.replyComposerSnippet}>
+                {getMessageSnippet(getReplyPreview(replyingToMessageId))}
+              </span>
+            </div>
+            <button
+              type="button"
+              className={styles.replyComposerClear}
+              onClick={() => setReplyingToMessageId(null)}
+              aria-label="Cancel reply"
+            >
+              &times;
+            </button>
+          </div>
+        )}
         {attachment && (
           <div className={styles.attachmentPreview}>
             {/* eslint-disable-next-line @next/next/no-img-element */}

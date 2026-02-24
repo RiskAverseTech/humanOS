@@ -45,10 +45,11 @@ export async function POST(request: Request) {
 
     const role = profile.role as UserRole
     const body = await request.json()
-    const { threadId, message, model: requestedModel } = body as {
+    const { threadId, message, model: requestedModel, replyToMessageId } = body as {
       threadId: string
       message: string
       model?: string
+      replyToMessageId?: string | null
     }
 
     if (!threadId || !message) {
@@ -97,6 +98,7 @@ export async function POST(request: Request) {
       role: 'user',
       content: message,
       sender_id: user.id,
+      reply_to_message_id: replyToMessageId ?? null,
     })
     void logActivityEvent({
       actorUserId: user.id,

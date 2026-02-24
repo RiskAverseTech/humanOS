@@ -21,6 +21,7 @@ export type MessageRow = {
   role: 'user' | 'assistant' | 'system'
   content: string
   sender_id: string | null
+  reply_to_message_id: string | null
   created_at: string
 }
 

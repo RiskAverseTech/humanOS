@@ -181,6 +181,7 @@
 .messages {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: var(--space-4) 0;
   display: flex;
   flex-direction: column;
@@ -212,11 +213,14 @@
   align-items: flex-start;
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
+  position: relative;
   transition: background-color 0.1s ease;
 }
 
-.messageRow:hover {
-  background-color: var(--color-bg-secondary);
+.messageRow:hover,
+.messageRow:focus-within {
+  background-color: color-mix(in srgb, var(--color-bg-secondary) 82%, transparent);
+  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--color-primary) 35%, transparent);
 }
 
 /* Avatar */
@@ -289,6 +293,40 @@
   white-space: pre-wrap;
 }
 
+.replyPreview {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  margin-bottom: 6px;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--color-border);
+  border-left: 3px solid color-mix(in srgb, var(--color-primary) 40%, var(--color-border));
+  background: color-mix(in srgb, var(--color-surface) 80%, transparent);
+  border-radius: var(--radius-md);
+  padding: 6px 8px;
+  cursor: pointer;
+}
+
+.replyPreview:hover {
+  background: var(--color-surface-hover);
+}
+
+.replyPreviewLabel {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.replyPreviewText {
+  font-size: 12px;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
 .reactionRow {
   display: flex;
   align-items: center;
@@ -322,6 +360,47 @@
 
 .reactionCount {
   font-variant-numeric: tabular-nums;
+}
+
+.reactionActions {
+  position: absolute;
+  top: -8px;
+  right: var(--space-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(2px);
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.messageRow:hover .reactionActions,
+.messageRow:focus-within .reactionActions {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.quickReactionBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 15px;
+  display: grid;
+  place-items: center;
+}
+
+.quickReactionBtn:hover {
+  background: var(--color-surface-hover);
 }
 
 /* Markdown inside assistant messages */
@@ -372,11 +451,54 @@
 /* Input area */
 .inputForm {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   gap: var(--space-2);
   padding: var(--space-3) 0;
   border-top: 1px solid var(--color-border);
   flex-shrink: 0;
+}
+
+.replyComposerBar {
+  flex: 0 0 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: 6px 8px;
+}
+
+.replyComposerText {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.replyComposerLabel {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.replyComposerSnippet {
+  font-size: 12px;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.replyComposerClear {
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
 }
 
 .textarea {

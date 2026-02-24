@@ -22,12 +22,14 @@ export function EmojiPickerButton({
   title = 'Add emoji',
   compact = false,
   triggerContent,
+  panelAlign = 'left',
 }: {
   onSelect: (emoji: string) => void
   disabled?: boolean
   title?: string
   compact?: boolean
   triggerContent?: React.ReactNode
+  panelAlign?: 'left' | 'right'
 }) {
   const [open, setOpen] = useState(false)
   const id = useMemo(() => `emoji-panel-${Math.random().toString(36).slice(2)}`, [])
@@ -56,7 +58,12 @@ export function EmojiPickerButton({
             aria-label="Close emoji picker"
             onClick={() => setOpen(false)}
           />
-          <div className={styles.panel} id={id} role="dialog" aria-label="Emoji picker">
+          <div
+            className={`${styles.panel} ${panelAlign === 'right' ? styles.panelRight : ''}`}
+            id={id}
+            role="dialog"
+            aria-label="Emoji picker"
+          >
             <div className={styles.header}>
               <span className={styles.title}>Pick an emoji</span>
               <button type="button" className={styles.close} onClick={() => setOpen(false)} aria-label="Close">

@@ -44,6 +44,11 @@
   padding: var(--space-2);
 }
 
+.panelRight {
+  left: auto;
+  right: 0;
+}
+
 .header {
   display: flex;
   align-items: center;

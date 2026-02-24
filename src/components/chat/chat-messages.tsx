@@ -43,6 +43,7 @@ export function ChatMessages({
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
   const [avatarUrls, setAvatarUrls] = useState<Record<string, string>>({})
+  const [replyingToMessageId, setReplyingToMessageId] = useState<string | null>(null)
   const [reactionsByMessageId, setReactionsByMessageId] = useState(
     initialReactionsByMessageId ?? {} as Record<string, Array<{ emoji: string; userId: string }>>
   )
@@ -54,6 +55,7 @@ export function ChatMessages({
   const models = getAvailableModels(profile.role)
 
   const aiDisplayName = getAiDisplayName(thread.model)
+  const quickReactions = ['👍', '❤️', '😂'] as const
 
   // Load avatar signed URLs
   useEffect(() => {
@@ -113,6 +115,7 @@ export function ChatMessages({
       setIsRenaming(false)
     }
     setIsShared(thread.is_shared)
+    setReplyingToMessageId(null)
   }, [thread.id, thread.title, thread.is_shared, isRenaming, savingTitle])
 
   useEffect(() => {
@@ -143,6 +146,7 @@ export function ChatMessages({
       role: 'user',
       content: userMessage,
       sender_id: profile.userId,
+      reply_to_message_id: replyingToMessageId,
       created_at: new Date().toISOString(),
     }
     setMessages((prev) => [...prev, tempUserMsg])
@@ -155,6 +159,7 @@ export function ChatMessages({
           threadId: thread.id,
           message: userMessage,
           model: thread.model,
+          replyToMessageId: replyingToMessageId,
         }),
       })
 
@@ -215,10 +220,12 @@ export function ChatMessages({
         role: 'assistant',
         content: fullText,
         sender_id: null,
+        reply_to_message_id: null,
         created_at: new Date().toISOString(),
       }
       setMessages((prev) => [...prev, assistantMsg])
       setStreamingText('')
+      setReplyingToMessageId(null)
 
       // Auto-title: if this is the first message, update the thread title
       if (messages.length === 0) {
@@ -239,6 +246,7 @@ export function ChatMessages({
         role: 'assistant',
         content: message,
         sender_id: null,
+        reply_to_message_id: null,
         created_at: new Date().toISOString(),
       }
       setMessages((prev) => [...prev, errMsg])
@@ -407,6 +415,19 @@ export function ChatMessages({
     return Array.from(grouped.values()).sort((a, b) => b.count - a.count || a.emoji.localeCompare(b.emoji))
   }
 
+  const messageMap = new Map(messages.map((m) => [m.id, m]))
+
+  function getReplyPreview(messageId: string | null) {
+    if (!messageId) return null
+    return messageMap.get(messageId) ?? null
+  }
+
+  function getMessageSnippet(message: MessageRow | null) {
+    if (!message) return 'Original message unavailable'
+    const text = message.content?.trim()
+    return text ? text : 'Message'
+  }
+
   return (
     <div className={styles.container}>
       {/* Thread header */}
@@ -509,7 +530,9 @@ export function ChatMessages({
           </div>
         )}
 
-        {messages.map((msg) => (
+        {messages.map((msg) => {
+          const reactionGroups = getReactionGroups(msg.id)
+          return (
           <div key={msg.id} className={styles.messageRow}>
             {renderAvatar(msg)}
             <div className={styles.messageBody}>
@@ -520,6 +543,17 @@ export function ChatMessages({
                 <span className={styles.timestamp}>{formatTimestamp(msg.created_at)}</span>
               </div>
               <div className={styles.messageContent}>
+                {msg.reply_to_message_id && (
+                  <button
+                    type="button"
+                    className={styles.replyPreview}
+                    onClick={() => setReplyingToMessageId(msg.reply_to_message_id)}
+                    title="Reply to this message"
+                  >
+                    <span className={styles.replyPreviewLabel}>Replying to</span>
+                    <span className={styles.replyPreviewText}>{getMessageSnippet(getReplyPreview(msg.reply_to_message_id))}</span>
+                  </button>
+                )}
                 {msg.role === 'user' ? (
                   msg.content
                 ) : (
@@ -529,29 +563,55 @@ export function ChatMessages({
                   />
                 )}
               </div>
-              <div className={styles.reactionRow}>
-                {getReactionGroups(msg.id).map((reaction) => (
+              {reactionGroups.length > 0 && (
+                <div className={styles.reactionRow}>
+                  {reactionGroups.map((reaction) => (
+                    <button
+                      key={`${msg.id}-${reaction.emoji}`}
+                      type="button"
+                      className={`${styles.reactionChip} ${reaction.reactedByMe ? styles.reactionChipActive : ''}`}
+                      onClick={() => void handleToggleReaction(msg.id, reaction.emoji)}
+                    >
+                      <span>{reaction.emoji}</span>
+                      <span className={styles.reactionCount}>{reaction.count}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className={styles.reactionActions}>
+                <button
+                  type="button"
+                  className={styles.quickReactionBtn}
+                  onClick={() => setReplyingToMessageId(msg.id)}
+                  title="Reply"
+                  aria-label="Reply to message"
+                >
+                  ↩️
+                </button>
+                {quickReactions.map((emoji) => (
                   <button
-                    key={`${msg.id}-${reaction.emoji}`}
+                    key={`${msg.id}-quick-${emoji}`}
                     type="button"
-                    className={`${styles.reactionChip} ${reaction.reactedByMe ? styles.reactionChipActive : ''}`}
-                    onClick={() => void handleToggleReaction(msg.id, reaction.emoji)}
+                    className={styles.quickReactionBtn}
+                    onClick={() => void handleToggleReaction(msg.id, emoji)}
+                    title={`React ${emoji}`}
                   >
-                    <span>{reaction.emoji}</span>
-                    <span className={styles.reactionCount}>{reaction.count}</span>
+                    {emoji}
                   </button>
                 ))}
                 <EmojiPickerButton
                   onSelect={(emoji) => { void handleToggleReaction(msg.id, emoji) }}
                   disabled={streaming}
-                  title="React to message"
+                  title="More reactions"
                   compact
                   triggerContent="➕"
+                  panelAlign="right"
                 />
               </div>
             </div>
           </div>
-        ))}
+          )
+        })}
 
         {streaming && streamingText && (
           <div className={styles.messageRow}>
@@ -580,6 +640,24 @@ export function ChatMessages({
 
       {/* Input */}
       <form onSubmit={handleSubmit} className={styles.inputForm}>
+        {replyingToMessageId && (
+          <div className={styles.replyComposerBar}>
+            <div className={styles.replyComposerText}>
+              <span className={styles.replyComposerLabel}>Replying to</span>
+              <span className={styles.replyComposerSnippet}>
+                {getMessageSnippet(getReplyPreview(replyingToMessageId))}
+              </span>
+            </div>
+            <button
+              type="button"
+              className={styles.replyComposerClear}
+              onClick={() => setReplyingToMessageId(null)}
+              aria-label="Cancel reply"
+            >
+              &times;
+            </button>
+          </div>
+        )}
         <EmojiPickerButton onSelect={insertEmoji} disabled={streaming} title="Add emoji to AI chat" />
         <textarea
           ref={inputRef}

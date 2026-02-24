@@ -106,11 +106,8 @@ export default async function DashboardPage() {
     ? profile.notification_categories
     : defaultCategories) as NotificationCategory[]
 
-  const recentActivity = (profile?.notifications_enabled ?? true)
-    ? (await getNotificationEvents({ categories: notificationCategories, limit: 30 }))
-        .filter((item) => item.ownerId !== userId)
-        .slice(0, 10)
-    : []
+  const recentActivity = await getNotificationEvents({ categories: notificationCategories, limit: 30 })
+    .then((items) => items.filter((item) => item.ownerId === userId).slice(0, 10))
 
   return (
     <div className={styles.container}>

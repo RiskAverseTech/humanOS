@@ -196,6 +196,7 @@ export type Database = {
           role: string
           content: string
           sender_id: string | null
+          reply_to_message_id: string | null
           created_at: string
         }
         Insert: {
@@ -204,6 +205,7 @@ export type Database = {
           role: string
           content: string
           sender_id?: string | null
+          reply_to_message_id?: string | null
           created_at?: string
         }
         Update: {
@@ -212,6 +214,7 @@ export type Database = {
           role?: string
           content?: string
           sender_id?: string | null
+          reply_to_message_id?: string | null
           created_at?: string
         }
         Relationships: [
@@ -382,6 +385,7 @@ export type Database = {
           content: string | null
           image_storage_path: string | null
           image_mime_type: string | null
+          reply_to_message_id: string | null
           created_at: string
         }
         Insert: {
@@ -391,6 +395,7 @@ export type Database = {
           content?: string | null
           image_storage_path?: string | null
           image_mime_type?: string | null
+          reply_to_message_id?: string | null
           created_at?: string
         }
         Update: {
@@ -400,6 +405,7 @@ export type Database = {
           content?: string | null
           image_storage_path?: string | null
           image_mime_type?: string | null
+          reply_to_message_id?: string | null
           created_at?: string
         }
         Relationships: [
