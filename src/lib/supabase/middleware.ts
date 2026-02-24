@@ -1,12 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-/**
- * Route protection rules for the child role.
- * These paths are blocked at the middleware level.
- */
-const CHILD_BLOCKED_ROUTES = ['/images', '/api/images']
-
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -73,19 +67,6 @@ export async function updateSession(request: NextRequest) {
     if (profile) {
       // Set role in response header so server components can read it
       supabaseResponse.headers.set('x-user-role', profile.role)
-
-      // Block child users from image generation routes
-      if (profile.role === 'child') {
-        const isBlocked = CHILD_BLOCKED_ROUTES.some((route) =>
-          pathname.startsWith(route)
-        )
-
-        if (isBlocked) {
-          const url = request.nextUrl.clone()
-          url.pathname = '/dashboard'
-          return NextResponse.redirect(url)
-        }
-      }
 
       // Settings is accessible to all roles; admin-only sections are gated in the UI
     }
