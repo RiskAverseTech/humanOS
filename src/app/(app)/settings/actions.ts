@@ -46,7 +46,8 @@ export async function updateProfile(updates: {
     .eq('user_id', user.id)
 
   if (error?.message?.includes('timezone_preference') && 'timezone_preference' in updates) {
-    const { timezone_preference: _unused, ...fallbackUpdates } = updates
+    const fallbackUpdates = { ...updates }
+    delete fallbackUpdates.timezone_preference
     const retry = await supabase
       .from('profiles')
       .update(fallbackUpdates)
