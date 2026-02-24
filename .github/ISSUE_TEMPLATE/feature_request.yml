@@ -1,0 +1,50 @@
+name: Feature request
+description: Suggest an improvement or new capability for HumanOS
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion. Please describe the user problem first, then the proposed solution.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / use case
+      placeholder: What problem are you trying to solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      placeholder: What should HumanOS do?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered (optional)
+      placeholder: Any workarounds or alternative approaches?
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Notes
+        - Vault
+        - Channels (Human Chat)
+        - AI Chat
+        - Images
+        - To Dos
+        - Notifications
+        - Settings / RBAC
+        - Developer Experience
+        - Documentation
+        - Other
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context (optional)
+      placeholder: Screenshots, references, examples, etc.
