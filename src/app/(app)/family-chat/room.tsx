@@ -34,7 +34,15 @@ type UploadedAttachment = {
   previewUrl: string
 }
 
+type GiphyPickerItem = {
+  id: string
+  title: string
+  previewUrl: string
+  messageUrl: string
+}
+
 const QUICK_REACTIONS = ['👍', '❤️', '😂'] as const
+const GIPHY_API_KEY = process.env.NEXT_PUBLIC_GIPHY_API_KEY ?? ''
 
 export function FamilyChatRoom({
   channel,
@@ -64,6 +72,12 @@ export function FamilyChatRoom({
   const [generatedPickerError, setGeneratedPickerError] = useState('')
   const [generatedPickerItems, setGeneratedPickerItems] = useState<FamilyGeneratedImagePickerItem[]>([])
   const [selectingGeneratedImageId, setSelectingGeneratedImageId] = useState<string | null>(null)
+  const [showGifPicker, setShowGifPicker] = useState(false)
+  const [gifQuery, setGifQuery] = useState('')
+  const [gifItems, setGifItems] = useState<GiphyPickerItem[]>([])
+  const [gifLoading, setGifLoading] = useState(false)
+  const [gifError, setGifError] = useState('')
+  const [sendingGifId, setSendingGifId] = useState<string | null>(null)
   const [replyingToMessageId, setReplyingToMessageId] = useState<string | null>(null)
   const [reactionsByMessageId, setReactionsByMessageId] = useState(
     initialReactionsByMessageId ?? {} as Record<string, Array<{ emoji: string; userId: string }>>
@@ -463,6 +477,95 @@ export function FamilyChatRoom({
     setShowGeneratedPicker(false)
   }
 
+  async function fetchGiphyItems(kind: 'trending' | 'search', query = '') {
+    if (!GIPHY_API_KEY) {
+      setGifError('GIPHY key is missing in env.')
+      return
+    }
+    setGifLoading(true)
+    setGifError('')
+    try {
+      const params = new URLSearchParams({
+        api_key: GIPHY_API_KEY,
+        rating: 'g',
+        limit: '24',
+        bundle: 'messaging_non_clips',
+      })
+      if (kind === 'search') params.set('q', query.trim())
+      const endpoint = kind === 'search' ? 'search' : 'trending'
+      const res = await fetch(`https://api.giphy.com/v1/gifs/${endpoint}?${params.toString()}`)
+      if (!res.ok) throw new Error(`GIPHY request failed (${res.status})`)
+      const data = await res.json() as {
+        data?: Array<{
+          id: string
+          title?: string
+          images?: Record<string, { url?: string }>
+        }>
+      }
+      const items = (data.data ?? [])
+        .map((gif): GiphyPickerItem | null => {
+          const previewUrl =
+            gif.images?.fixed_width_small?.url ||
+            gif.images?.fixed_width?.url ||
+            gif.images?.downsized?.url ||
+            ''
+          const messageUrl =
+            gif.images?.downsized?.url ||
+            gif.images?.original?.url ||
+            gif.images?.fixed_width?.url ||
+            ''
+          if (!previewUrl || !messageUrl) return null
+          return {
+            id: gif.id,
+            title: gif.title?.trim() || 'GIF',
+            previewUrl,
+            messageUrl,
+          }
+        })
+        .filter((v): v is GiphyPickerItem => Boolean(v))
+      setGifItems(items)
+    } catch (error) {
+      setGifError(error instanceof Error ? error.message : 'Could not load GIFs.')
+    } finally {
+      setGifLoading(false)
+    }
+  }
+
+  async function openGifPicker() {
+    setShowGifPicker(true)
+    if (gifItems.length > 0 || gifLoading) return
+    await fetchGiphyItems('trending')
+  }
+
+  async function handleGifSearchSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!gifQuery.trim()) {
+      await fetchGiphyItems('trending')
+      return
+    }
+    await fetchGiphyItems('search', gifQuery)
+  }
+
+  async function handleSendGif(gif: GiphyPickerItem) {
+    if (sendingGifId) return
+    setSendingGifId(gif.id)
+    setGifError('')
+    const result = await postFamilyMessage({
+      channelId: channel.id,
+      content: gif.messageUrl,
+      replyToMessageId: replyingToMessageId,
+    })
+    setSendingGifId(null)
+    if (!result.success) {
+      setGifError(result.error || 'Could not send GIF.')
+      return
+    }
+    setShowGifPicker(false)
+    setReplyingToMessageId(null)
+    startAutoAnchorWindow(1800)
+    router.refresh()
+  }
+
   function insertEmoji(emoji: string) {
     const el = textareaRef.current
     if (!el) {
@@ -542,6 +645,7 @@ export function FamilyChatRoom({
 
   function getMessageSnippet(message: FamilyMessageRow | null) {
     if (!message) return 'Original message unavailable'
+    if (extractGiphyGifUrl(message.content)) return 'GIF'
     if (message.content?.trim()) return message.content.trim()
     if (message.image_storage_path) return 'Image'
     return 'Message'
@@ -622,6 +726,7 @@ export function FamilyChatRoom({
         >
           {messages.map((msg) => {
             const reactionGroups = getReactionGroups(msg.id)
+            const giphyUrl = extractGiphyGifUrl(msg.content)
             return (
             <div key={msg.id} className={styles.messageRow}>
               <div className={styles.avatar}>
@@ -649,7 +754,15 @@ export function FamilyChatRoom({
                     </button>
                   )}
                 </div>
-                {msg.content && <p className={styles.messageText}>{msg.content}</p>}
+                {giphyUrl ? (
+                  <div className={styles.giphyMessageWrap}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={giphyUrl} alt="GIF" className={styles.messageImage} />
+                    <span className={styles.giphyAttribution}>GIF via GIPHY</span>
+                  </div>
+                ) : (
+                  msg.content && <p className={styles.messageText}>{msg.content}</p>
+                )}
                 {msg.reply_to_message_id && (
                   <button
                     type="button"
@@ -778,6 +891,15 @@ export function FamilyChatRoom({
           >
             🖼️
           </button>
+          <button
+            type="button"
+            className={`${styles.attachBtn} ${styles.gifBtn}`}
+            onClick={() => void openGifPicker()}
+            disabled={sending || uploadingImage}
+            title="Send GIF (GIPHY)"
+          >
+            GIF
+          </button>
           <input
             ref={fileInputRef}
             type="file"
@@ -855,6 +977,80 @@ export function FamilyChatRoom({
           </div>
         </div>
       )}
+
+      {showGifPicker && (
+        <div className={styles.pickerOverlay} onClick={() => setShowGifPicker(false)}>
+          <div className={styles.pickerModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.pickerHeader}>
+              <h3 className={styles.pickerTitle}>Send a GIF</h3>
+              <button className={styles.pickerCloseBtn} onClick={() => setShowGifPicker(false)} aria-label="Close">
+                &times;
+              </button>
+            </div>
+            <form className={styles.giphyToolbar} onSubmit={handleGifSearchSubmit}>
+              <input
+                type="text"
+                className={styles.giphySearchInput}
+                value={gifQuery}
+                onChange={(e) => setGifQuery(e.target.value)}
+                placeholder="Search GIFs (family-safe)"
+              />
+              <button type="submit" className={styles.headerGhostBtn} disabled={gifLoading}>
+                {gifLoading ? '...' : 'Search'}
+              </button>
+              <button
+                type="button"
+                className={styles.headerGhostBtn}
+                disabled={gifLoading}
+                onClick={() => {
+                  setGifQuery('')
+                  void fetchGiphyItems('trending')
+                }}
+              >
+                Trending
+              </button>
+            </form>
+            <p className={styles.giphyProviderLine}>Powered by GIPHY • Rating G</p>
+            {gifLoading ? (
+              <p className={styles.pickerEmpty}>Loading GIFs...</p>
+            ) : gifItems.length === 0 ? (
+              <p className={styles.pickerEmpty}>No GIFs found.</p>
+            ) : (
+              <div className={styles.pickerGrid}>
+                {gifItems.map((gif) => (
+                  <button
+                    key={gif.id}
+                    type="button"
+                    className={styles.pickerCard}
+                    onClick={() => void handleSendGif(gif)}
+                    disabled={sendingGifId === gif.id}
+                    title={gif.title}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={gif.previewUrl} alt={gif.title} className={styles.pickerThumb} />
+                    <span className={styles.pickerCardPrompt}>
+                      {sendingGifId === gif.id ? 'Sending...' : gif.title}
+                    </span>
+                    <span className={styles.giphyBadge}>GIF</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            {gifError && <p className={styles.error}>{gifError}</p>}
+          </div>
+        </div>
+      )}
     </div>
   )
+}
+
+function extractGiphyGifUrl(content: string | null): string | null {
+  const text = content?.trim()
+  if (!text) return null
+  const isGiphy =
+    /^https?:\/\/([a-z0-9-]+\.)?giphy\.com\/media\//i.test(text) ||
+    /^https?:\/\/media\d*\.giphy\.com\//i.test(text)
+  if (!isGiphy) return null
+  if (!/\.(gif|webp)(\?|$)/i.test(text)) return null
+  return text
 }
