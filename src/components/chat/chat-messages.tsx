@@ -6,7 +6,7 @@ import { createClient as createBrowserSupabaseClient } from '@/lib/supabase/clie
 import { getAvailableModels } from '@/lib/ai/prompts'
 import { EmojiPickerButton } from '@/components/ui/emoji-picker'
 import type { MessageRow, ThreadRow } from '@/app/(app)/chat/actions'
-import { updateThread, deleteThread } from '@/app/(app)/chat/actions'
+import { updateThread, deleteThread, toggleChatMessageReaction } from '@/app/(app)/chat/actions'
 import { useRouter } from 'next/navigation'
 import styles from './chat-messages.module.css'
 
@@ -16,6 +16,7 @@ type ChatMessagesProps = {
   threadOwnerName?: string
   memberNames?: Record<string, string>
   memberAvatars?: Record<string, string | null>
+  reactionsByMessageId?: Record<string, Array<{ emoji: string; userId: string }>>
 }
 
 export function ChatMessages({
@@ -24,6 +25,7 @@ export function ChatMessages({
   threadOwnerName,
   memberNames,
   memberAvatars,
+  reactionsByMessageId: initialReactionsByMessageId,
 }: ChatMessagesProps) {
   const profile = useProfile()
   const router = useRouter()
@@ -41,6 +43,9 @@ export function ChatMessages({
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
   const [avatarUrls, setAvatarUrls] = useState<Record<string, string>>({})
+  const [reactionsByMessageId, setReactionsByMessageId] = useState(
+    initialReactionsByMessageId ?? {} as Record<string, Array<{ emoji: string; userId: string }>>
+  )
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const messagesRef = useRef<HTMLDivElement>(null)
@@ -109,6 +114,10 @@ export function ChatMessages({
     }
     setIsShared(thread.is_shared)
   }, [thread.id, thread.title, thread.is_shared, isRenaming, savingTitle])
+
+  useEffect(() => {
+    setReactionsByMessageId(initialReactionsByMessageId ?? {})
+  }, [initialReactionsByMessageId, thread.id])
 
   useEffect(() => {
     try {
@@ -318,6 +327,21 @@ export function ChatMessages({
     })
   }
 
+  async function handleToggleReaction(messageId: string, emoji: string) {
+    const normalized = emoji.trim()
+    if (!normalized) return
+    setReactionsByMessageId((prev) => {
+      const current = prev[messageId] ?? []
+      const exists = current.some((r) => r.userId === profile.userId && r.emoji === normalized)
+      const nextRows = exists
+        ? current.filter((r) => !(r.userId === profile.userId && r.emoji === normalized))
+        : [...current, { emoji: normalized, userId: profile.userId }]
+      return { ...prev, [messageId]: nextRows }
+    })
+    const result = await toggleChatMessageReaction({ threadId: thread.id, messageId, emoji: normalized })
+    if (!result.success) router.refresh()
+  }
+
   function getSenderName(msg: MessageRow): string {
     if (msg.role === 'assistant') return aiDisplayName
     if (msg.sender_id && memberNames?.[msg.sender_id]) return memberNames[msg.sender_id]
@@ -362,6 +386,25 @@ export function ChatMessages({
         )}
       </div>
     )
+  }
+
+  function getReactionGroups(messageId: string) {
+    const rows = reactionsByMessageId[messageId] ?? []
+    const grouped = new Map<string, { emoji: string; count: number; reactedByMe: boolean }>()
+    for (const row of rows) {
+      const existing = grouped.get(row.emoji)
+      if (existing) {
+        existing.count += 1
+        if (row.userId === profile.userId) existing.reactedByMe = true
+      } else {
+        grouped.set(row.emoji, {
+          emoji: row.emoji,
+          count: 1,
+          reactedByMe: row.userId === profile.userId,
+        })
+      }
+    }
+    return Array.from(grouped.values()).sort((a, b) => b.count - a.count || a.emoji.localeCompare(b.emoji))
   }
 
   return (
@@ -485,6 +528,26 @@ export function ChatMessages({
                     dangerouslySetInnerHTML={{ __html: simpleMarkdown(msg.content) }}
                   />
                 )}
+              </div>
+              <div className={styles.reactionRow}>
+                {getReactionGroups(msg.id).map((reaction) => (
+                  <button
+                    key={`${msg.id}-${reaction.emoji}`}
+                    type="button"
+                    className={`${styles.reactionChip} ${reaction.reactedByMe ? styles.reactionChipActive : ''}`}
+                    onClick={() => void handleToggleReaction(msg.id, reaction.emoji)}
+                  >
+                    <span>{reaction.emoji}</span>
+                    <span className={styles.reactionCount}>{reaction.count}</span>
+                  </button>
+                ))}
+                <EmojiPickerButton
+                  onSelect={(emoji) => { void handleToggleReaction(msg.id, emoji) }}
+                  disabled={streaming}
+                  title="React to message"
+                  compact
+                  triggerContent="➕"
+                />
               </div>
             </div>
           </div>

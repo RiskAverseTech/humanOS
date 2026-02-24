@@ -12,6 +12,7 @@ import {
   getFamilyChatUploadUrl,
   postFamilyMessage,
   renameFamilyChannel,
+  toggleFamilyMessageReaction,
   type FamilyGeneratedImagePickerItem,
   type FamilyChannelRow,
   type FamilyMessageRow,
@@ -23,6 +24,7 @@ type Props = {
   messages: FamilyMessageRow[]
   ownerNames: Record<string, string>
   ownerAvatars?: Record<string, string | null>
+  reactionsByMessageId?: Record<string, Array<{ emoji: string; userId: string }>>
 }
 
 type UploadedAttachment = {
@@ -31,7 +33,13 @@ type UploadedAttachment = {
   previewUrl: string
 }
 
-export function FamilyChatRoom({ channel, messages: initialMessages, ownerNames, ownerAvatars }: Props) {
+export function FamilyChatRoom({
+  channel,
+  messages: initialMessages,
+  ownerNames,
+  ownerAvatars,
+  reactionsByMessageId: initialReactionsByMessageId,
+}: Props) {
   const profile = useProfile()
   const router = useRouter()
   const [messages, setMessages] = useState(initialMessages)
@@ -52,6 +60,9 @@ export function FamilyChatRoom({ channel, messages: initialMessages, ownerNames,
   const [generatedPickerError, setGeneratedPickerError] = useState('')
   const [generatedPickerItems, setGeneratedPickerItems] = useState<FamilyGeneratedImagePickerItem[]>([])
   const [selectingGeneratedImageId, setSelectingGeneratedImageId] = useState<string | null>(null)
+  const [reactionsByMessageId, setReactionsByMessageId] = useState(
+    initialReactionsByMessageId ?? {} as Record<string, Array<{ emoji: string; userId: string }>>
+  )
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const messagesRef = useRef<HTMLDivElement>(null)
@@ -59,6 +70,10 @@ export function FamilyChatRoom({ channel, messages: initialMessages, ownerNames,
   const prevChannelIdRef = useRef<string | null>(null)
   const initialLoadedImageIdsRef = useRef<Set<string>>(new Set())
   const initialRevealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const initialPostRevealAnchorsRef = useRef<number[]>([])
+  const initialAutoAnchorUntilRef = useRef<number>(0)
+  const userTookScrollControlRef = useRef(false)
+  const programmaticScrollRef = useRef(false)
 
   const initialImageMessageIds = messages
     .filter((msg) => Boolean(msg.image_storage_path))
@@ -66,7 +81,11 @@ export function FamilyChatRoom({ channel, messages: initialMessages, ownerNames,
 
   function scrollMessagesToBottom() {
     if (!messagesRef.current) return
+    programmaticScrollRef.current = true
     messagesRef.current.scrollTop = messagesRef.current.scrollHeight
+    requestAnimationFrame(() => {
+      programmaticScrollRef.current = false
+    })
   }
 
   function revealAtBottom() {
@@ -74,7 +93,24 @@ export function FamilyChatRoom({ channel, messages: initialMessages, ownerNames,
     requestAnimationFrame(() => {
       scrollMessagesToBottom()
       setInitialPositioned(true)
+      schedulePostRevealAnchors()
     })
+  }
+
+  function schedulePostRevealAnchors() {
+    for (const timeoutId of initialPostRevealAnchorsRef.current) {
+      clearTimeout(timeoutId)
+    }
+    initialPostRevealAnchorsRef.current = []
+
+    for (const delay of [0, 40, 120, 260, 600, 1000]) {
+      const timeoutId = window.setTimeout(() => {
+        if (userTookScrollControlRef.current) return
+        if (Date.now() > initialAutoAnchorUntilRef.current) return
+        scrollMessagesToBottom()
+      }, delay)
+      initialPostRevealAnchorsRef.current.push(timeoutId)
+    }
   }
 
   useEffect(() => {
@@ -111,11 +147,21 @@ export function FamilyChatRoom({ channel, messages: initialMessages, ownerNames,
   }, [initialMessages, channel.id, channel.name, renaming, savingName])
 
   useEffect(() => {
+    setReactionsByMessageId(initialReactionsByMessageId ?? {})
+  }, [initialReactionsByMessageId, channel.id])
+
+  useEffect(() => {
     if (prevChannelIdRef.current !== null && prevChannelIdRef.current !== channel.id) {
       initialScrolledForChannelRef.current = null
       initialLoadedImageIdsRef.current = new Set()
       setInitialPositioned(false)
     }
+    initialAutoAnchorUntilRef.current = Date.now() + 5000
+    userTookScrollControlRef.current = false
+    for (const timeoutId of initialPostRevealAnchorsRef.current) {
+      clearTimeout(timeoutId)
+    }
+    initialPostRevealAnchorsRef.current = []
     prevChannelIdRef.current = channel.id
   }, [channel.id])
 
@@ -172,11 +218,34 @@ export function FamilyChatRoom({ channel, messages: initialMessages, ownerNames,
   }, [channel.id, initialPositioned, initialImageMessageIds, imageUrls])
 
   useEffect(() => {
+    if (!initialPositioned) return
+    if (userTookScrollControlRef.current) return
+    if (Date.now() > initialAutoAnchorUntilRef.current) return
+
+    requestAnimationFrame(() => {
+      if (userTookScrollControlRef.current) return
+      if (Date.now() > initialAutoAnchorUntilRef.current) return
+      scrollMessagesToBottom()
+    })
+  }, [imageUrls, messages.length, initialPositioned])
+
+  useEffect(() => {
     const interval = window.setInterval(() => {
       router.refresh()
     }, 5000)
     return () => window.clearInterval(interval)
   }, [router])
+
+  useEffect(() => {
+    return () => {
+      if (initialRevealTimeoutRef.current) {
+        clearTimeout(initialRevealTimeoutRef.current)
+      }
+      for (const timeoutId of initialPostRevealAnchorsRef.current) {
+        clearTimeout(timeoutId)
+      }
+    }
+  }, [])
 
   async function handleRename() {
     const next = draftName.trim()
@@ -219,6 +288,23 @@ export function FamilyChatRoom({ channel, messages: initialMessages, ownerNames,
   async function handleMessageDelete(id: string) {
     await deleteFamilyMessage(id)
     router.refresh()
+  }
+
+  async function handleToggleReaction(messageId: string, emoji: string) {
+    const normalized = emoji.trim()
+    if (!normalized) return
+    setReactionsByMessageId((prev) => {
+      const current = prev[messageId] ?? []
+      const exists = current.some((r) => r.userId === profile.userId && r.emoji === normalized)
+      const nextRows = exists
+        ? current.filter((r) => !(r.userId === profile.userId && r.emoji === normalized))
+        : [...current, { emoji: normalized, userId: profile.userId }]
+      return { ...prev, [messageId]: nextRows }
+    })
+    const result = await toggleFamilyMessageReaction({ channelId: channel.id, messageId, emoji: normalized })
+    if (!result.success) {
+      router.refresh()
+    }
   }
 
   async function uploadChatImage(file: File) {
@@ -320,12 +406,39 @@ export function FamilyChatRoom({ channel, messages: initialMessages, ownerNames,
   }
 
   function handleInitialMessageImageReady(messageId: string) {
+    if (!userTookScrollControlRef.current && Date.now() <= initialAutoAnchorUntilRef.current) {
+      scrollMessagesToBottom()
+    }
     if (initialPositioned) return
-    scrollMessagesToBottom()
     initialLoadedImageIdsRef.current.add(messageId)
     if (initialImageMessageIds.every((id) => initialLoadedImageIdsRef.current.has(id))) {
       revealAtBottom()
     }
+  }
+
+  function handleMessagesScroll() {
+    if (!initialPositioned) return
+    if (programmaticScrollRef.current) return
+    userTookScrollControlRef.current = true
+  }
+
+  function getReactionGroups(messageId: string) {
+    const rows = reactionsByMessageId[messageId] ?? []
+    const grouped = new Map<string, { emoji: string; count: number; reactedByMe: boolean }>()
+    for (const row of rows) {
+      const existing = grouped.get(row.emoji)
+      if (existing) {
+        existing.count += 1
+        if (row.userId === profile.userId) existing.reactedByMe = true
+      } else {
+        grouped.set(row.emoji, {
+          emoji: row.emoji,
+          count: 1,
+          reactedByMe: row.userId === profile.userId,
+        })
+      }
+    }
+    return Array.from(grouped.values()).sort((a, b) => b.count - a.count || a.emoji.localeCompare(b.emoji))
   }
 
   return (
@@ -388,6 +501,7 @@ export function FamilyChatRoom({ channel, messages: initialMessages, ownerNames,
         <div
           className={styles.messages}
           ref={messagesRef}
+          onScroll={handleMessagesScroll}
           style={{ visibility: hydrated && initialPositioned ? 'visible' : 'hidden' }}
         >
           {messages.map((msg) => (
@@ -428,6 +542,27 @@ export function FamilyChatRoom({ channel, messages: initialMessages, ownerNames,
                     onError={() => handleInitialMessageImageReady(msg.id)}
                   />
                 )}
+                <div className={styles.reactionRow}>
+                  {getReactionGroups(msg.id).map((reaction) => (
+                    <button
+                      key={`${msg.id}-${reaction.emoji}`}
+                      type="button"
+                      className={`${styles.reactionChip} ${reaction.reactedByMe ? styles.reactionChipActive : ''}`}
+                      onClick={() => void handleToggleReaction(msg.id, reaction.emoji)}
+                      title={reaction.reactedByMe ? 'Remove reaction' : 'React'}
+                    >
+                      <span>{reaction.emoji}</span>
+                      <span className={styles.reactionCount}>{reaction.count}</span>
+                    </button>
+                  ))}
+                  <EmojiPickerButton
+                    onSelect={(emoji) => { void handleToggleReaction(msg.id, emoji) }}
+                    disabled={sending}
+                    title="React to message"
+                    compact
+                    triggerContent="➕"
+                  />
+                </div>
               </div>
             </div>
           ))}

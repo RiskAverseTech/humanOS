@@ -3,7 +3,7 @@ import { getProfile, getProfileNamesByUserIds, getProfileAvatarsByUserIds } from
 import { FamilyChatRoom } from '../room'
 import { FamilyChatMembersPanel } from '../members-panel'
 import { FamilyChatShell } from '../shell'
-import { getFamilyChannel, getFamilyChannels, getFamilyMessages } from '../actions'
+import { getFamilyChannel, getFamilyChannels, getFamilyMessages, getFamilyMessageReactions } from '../actions'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -47,6 +47,13 @@ export default async function FamilyChatChannelPage({ params }: Props) {
       return a.name.localeCompare(b.name)
     })
 
+  const reactions = await getFamilyMessageReactions(messages.map((m) => m.id))
+  const reactionsByMessageId = reactions.reduce<Record<string, Array<{ emoji: string; userId: string }>>>((acc, row) => {
+    if (!acc[row.message_id]) acc[row.message_id] = []
+    acc[row.message_id].push({ emoji: row.emoji, userId: row.user_id })
+    return acc
+  }, {})
+
   return (
     <FamilyChatShell
       channels={channels}
@@ -57,6 +64,7 @@ export default async function FamilyChatChannelPage({ params }: Props) {
         messages={messages}
         ownerNames={ownerNames}
         ownerAvatars={ownerAvatars}
+        reactionsByMessageId={reactionsByMessageId}
       />
     </FamilyChatShell>
   )

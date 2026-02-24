@@ -232,6 +232,41 @@
   background: var(--color-bg-secondary);
 }
 
+.reactionRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: var(--space-2);
+}
+
+.reactionChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 12px;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
+.reactionChip:hover {
+  background: var(--color-surface-hover);
+}
+
+.reactionChipActive {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary-light) 70%, transparent);
+  color: var(--color-primary);
+}
+
+.reactionCount {
+  font-variant-numeric: tabular-nums;
+}
+
 .composer {
   border-top: 1px solid var(--color-border);
   padding-top: var(--space-3);

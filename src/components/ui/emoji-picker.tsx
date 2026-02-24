@@ -20,10 +20,14 @@ export function EmojiPickerButton({
   onSelect,
   disabled,
   title = 'Add emoji',
+  compact = false,
+  triggerContent,
 }: {
   onSelect: (emoji: string) => void
   disabled?: boolean
   title?: string
+  compact?: boolean
+  triggerContent?: React.ReactNode
 }) {
   const [open, setOpen] = useState(false)
   const id = useMemo(() => `emoji-panel-${Math.random().toString(36).slice(2)}`, [])
@@ -32,7 +36,7 @@ export function EmojiPickerButton({
     <div className={styles.wrap}>
       <button
         type="button"
-        className={styles.trigger}
+        className={`${styles.trigger} ${compact ? styles.triggerCompact : ''}`}
         aria-label={title}
         aria-haspopup="dialog"
         aria-expanded={open}
@@ -41,7 +45,7 @@ export function EmojiPickerButton({
         disabled={disabled}
         title={title}
       >
-        😊
+        {triggerContent ?? '😊'}
       </button>
 
       {open && (

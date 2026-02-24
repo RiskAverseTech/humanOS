@@ -22,6 +22,14 @@ export type FamilyMessageRow = {
   created_at: string
 }
 
+export type FamilyMessageReactionRow = {
+  id: string
+  message_id: string
+  user_id: string
+  emoji: string
+  created_at: string
+}
+
 export type FamilyGeneratedImagePickerItem = {
   id: string
   prompt: string
@@ -77,6 +85,24 @@ export async function getFamilyMessages(channelId: string, limit = 200): Promise
   }
 
   return (data ?? []) as FamilyMessageRow[]
+}
+
+export async function getFamilyMessageReactions(messageIds: string[]): Promise<FamilyMessageReactionRow[]> {
+  const ids = Array.from(new Set(messageIds.filter(Boolean)))
+  if (ids.length === 0) return []
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('family_chat_message_reactions')
+    .select('*')
+    .in('message_id', ids)
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching family chat message reactions:', error)
+    return []
+  }
+
+  return (data ?? []) as FamilyMessageReactionRow[]
 }
 
 export async function createFamilyChannel(input?: { name?: string }): Promise<string | null> {
@@ -224,6 +250,52 @@ export async function deleteFamilyMessage(messageId: string) {
       href: msg?.channel_id ? `/family-chat/${msg.channel_id}` : '/family-chat',
     })
   }
+  return { success: true }
+}
+
+export async function toggleFamilyMessageReaction(input: {
+  channelId: string
+  messageId: string
+  emoji: string
+}) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
+
+  const emoji = input.emoji.trim()
+  if (!emoji) return { success: false, error: 'Emoji is required' }
+
+  const { data: existing, error: existingError } = await supabase
+    .from('family_chat_message_reactions')
+    .select('id')
+    .eq('message_id', input.messageId)
+    .eq('user_id', user.id)
+    .eq('emoji', emoji)
+    .maybeSingle()
+
+  if (existingError) return { success: false, error: existingError.message }
+
+  if (existing) {
+    const { error } = await supabase
+      .from('family_chat_message_reactions')
+      .delete()
+      .eq('id', existing.id)
+      .eq('user_id', user.id)
+    if (error) return { success: false, error: error.message }
+  } else {
+    const { error } = await supabase
+      .from('family_chat_message_reactions')
+      .insert({
+        message_id: input.messageId,
+        user_id: user.id,
+        emoji,
+      })
+    if (error) return { success: false, error: error.message }
+  }
+
+  revalidatePath(`/family-chat/${input.channelId}`)
   return { success: true }
 }
 

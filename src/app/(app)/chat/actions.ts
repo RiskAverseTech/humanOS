@@ -24,6 +24,14 @@ export type MessageRow = {
   created_at: string
 }
 
+export type MessageReactionRow = {
+  id: string
+  message_id: string
+  user_id: string
+  emoji: string
+  created_at: string
+}
+
 /** Fetch all chat threads the user can see */
 export async function getThreads() {
   const supabase = await createClient()
@@ -73,6 +81,24 @@ export async function getMessages(threadId: string): Promise<MessageRow[]> {
   }
 
   return (data ?? []) as MessageRow[]
+}
+
+export async function getChatMessageReactions(messageIds: string[]): Promise<MessageReactionRow[]> {
+  const ids = Array.from(new Set(messageIds.filter(Boolean)))
+  if (ids.length === 0) return []
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('chat_message_reactions')
+    .select('*')
+    .in('message_id', ids)
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching chat message reactions:', error)
+    return []
+  }
+
+  return (data ?? []) as MessageReactionRow[]
 }
 
 /** Create a new thread */
@@ -183,5 +209,51 @@ export async function deleteThread(id: string) {
       href: '/chat',
     })
   }
+  return { success: true }
+}
+
+export async function toggleChatMessageReaction(input: {
+  threadId: string
+  messageId: string
+  emoji: string
+}) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
+
+  const emoji = input.emoji.trim()
+  if (!emoji) return { success: false, error: 'Emoji is required' }
+
+  const { data: existing, error: existingError } = await supabase
+    .from('chat_message_reactions')
+    .select('id')
+    .eq('message_id', input.messageId)
+    .eq('user_id', user.id)
+    .eq('emoji', emoji)
+    .maybeSingle()
+
+  if (existingError) return { success: false, error: existingError.message }
+
+  if (existing) {
+    const { error } = await supabase
+      .from('chat_message_reactions')
+      .delete()
+      .eq('id', existing.id)
+      .eq('user_id', user.id)
+    if (error) return { success: false, error: error.message }
+  } else {
+    const { error } = await supabase
+      .from('chat_message_reactions')
+      .insert({
+        message_id: input.messageId,
+        user_id: user.id,
+        emoji,
+      })
+    if (error) return { success: false, error: error.message }
+  }
+
+  revalidatePath(`/chat/${input.threadId}`)
   return { success: true }
 }

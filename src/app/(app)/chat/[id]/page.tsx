@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { getProfile, getProfileNamesByUserIds, getProfileAvatarsByUserIds } from '@/lib/supabase/profile'
-import { getThread, getThreads, getMessages } from '../actions'
+import { getThread, getThreads, getMessages, getChatMessageReactions } from '../actions'
 import { ChatLayout } from '../chat-layout'
 import { ChatMessages } from '@/components/chat/chat-messages'
 import { FamilyChatMembersPanel } from '@/app/(app)/family-chat/members-panel'
@@ -64,6 +64,13 @@ export default async function ChatThreadPage({ params }: Props) {
     return diff !== 0 ? diff : a.name.localeCompare(b.name)
   })
 
+  const reactions = await getChatMessageReactions(messages.map((m) => m.id))
+  const reactionsByMessageId = reactions.reduce<Record<string, Array<{ emoji: string; userId: string }>>>((acc, row) => {
+    if (!acc[row.message_id]) acc[row.message_id] = []
+    acc[row.message_id].push({ emoji: row.emoji, userId: row.user_id })
+    return acc
+  }, {})
+
   return (
     <ChatLayout
       threads={threads}
@@ -76,6 +83,7 @@ export default async function ChatThreadPage({ params }: Props) {
         threadOwnerName={threadOwnerNames[thread.owner_id]}
         memberNames={threadOwnerNames}
         memberAvatars={memberAvatars}
+        reactionsByMessageId={reactionsByMessageId}
       />
     </ChatLayout>
   )
