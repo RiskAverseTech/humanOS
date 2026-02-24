@@ -695,6 +695,14 @@
   }
 
   .reactionActions {
+    position: static;
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+    margin-top: 6px;
+    width: fit-content;
+    max-width: 100%;
+    flex-wrap: wrap;
     right: 0;
   }
 }

@@ -64,6 +64,16 @@
   color: var(--color-text-muted);
 }
 
+.headerDangerBtn {
+  color: var(--color-danger);
+  border-color: color-mix(in srgb, var(--color-danger) 30%, var(--color-border));
+}
+
+.headerDangerBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .headerMeta {
   display: flex;
   align-items: center;
@@ -633,5 +643,16 @@
 
   .pickerGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .reactionActions {
+    position: static;
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+    margin-top: 6px;
+    width: fit-content;
+    max-width: 100%;
+    flex-wrap: wrap;
   }
 }

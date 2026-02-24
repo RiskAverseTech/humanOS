@@ -8,6 +8,7 @@ export type FamilyChannelRow = {
   id: string
   owner_id: string
   name: string
+  archived_at?: string | null
   created_at: string
   updated_at: string
 }
@@ -49,6 +50,7 @@ export async function getFamilyChannels(): Promise<FamilyChannelRow[]> {
   const { data, error } = await supabase
     .from('family_chat_channels')
     .select('*')
+    .is('archived_at', null)
     .order('updated_at', { ascending: false })
 
   if (error) {
@@ -65,6 +67,7 @@ export async function getFamilyChannel(id: string): Promise<FamilyChannelRow | n
     .from('family_chat_channels')
     .select('*')
     .eq('id', id)
+    .is('archived_at', null)
     .single()
 
   if (error) return null
@@ -167,6 +170,49 @@ export async function renameFamilyChannel(channelId: string, name: string) {
       href: `/family-chat/${channelId}`,
     })
   }
+  return { success: true }
+}
+
+export async function archiveFamilyChannel(channelId: string) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
+
+  const { data: channel, error: readError } = await supabase
+    .from('family_chat_channels')
+    .select('id, owner_id, name')
+    .eq('id', channelId)
+    .single()
+
+  if (readError || !channel) {
+    return { success: false, error: 'Channel not found' }
+  }
+  if (channel.owner_id !== user.id) {
+    return { success: false, error: 'Only the channel owner can archive this chat' }
+  }
+
+  const { error } = await supabase
+    .from('family_chat_channels')
+    .update({ archived_at: new Date().toISOString() })
+    .eq('id', channelId)
+    .eq('owner_id', user.id)
+
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath('/family-chat')
+  revalidatePath(`/family-chat/${channelId}`)
+  void logActivityEvent({
+    actorUserId: user.id,
+    category: 'human_chat',
+    entityType: 'human_chat_channel',
+    entityId: channelId,
+    action: 'deleted',
+    title: `Archived #${channel.name}`,
+    href: '/family-chat',
+  })
+
   return { success: true }
 }
 

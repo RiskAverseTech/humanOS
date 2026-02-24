@@ -6,6 +6,7 @@ import { createClient as createBrowserSupabaseClient } from '@/lib/supabase/clie
 import { useProfile } from '@/components/providers/profile-provider'
 import { EmojiPickerButton } from '@/components/ui/emoji-picker'
 import {
+  archiveFamilyChannel,
   copyGeneratedImageToFamilyChatUpload,
   deleteFamilyMessage,
   getGeneratedImagesForFamilyChatPicker,
@@ -49,6 +50,7 @@ export function FamilyChatRoom({
   const [draftName, setDraftName] = useState(channel.name)
   const [renaming, setRenaming] = useState(false)
   const [savingName, setSavingName] = useState(false)
+  const [archivingChannel, setArchivingChannel] = useState(false)
   const [sending, setSending] = useState(false)
   const [attachment, setAttachment] = useState<UploadedAttachment | null>(null)
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
@@ -329,6 +331,19 @@ export function FamilyChatRoom({
     }
   }
 
+  async function handleArchiveChannel() {
+    if (archivingChannel) return
+    if (!confirm(`Archive #${channel.name}? It will be hidden from the channel list.`)) return
+    setArchivingChannel(true)
+    const result = await archiveFamilyChannel(channel.id)
+    setArchivingChannel(false)
+    if (result.success) {
+      router.push('/family-chat')
+      return
+    }
+    window.alert(result.error || 'Could not archive channel')
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if ((!input.trim() && !attachment) || sending) return
@@ -498,17 +513,20 @@ export function FamilyChatRoom({
 
   function getReactionGroups(messageId: string) {
     const rows = reactionsByMessageId[messageId] ?? []
-    const grouped = new Map<string, { emoji: string; count: number; reactedByMe: boolean }>()
+    const grouped = new Map<string, { emoji: string; count: number; reactedByMe: boolean; userNames: string[] }>()
     for (const row of rows) {
+      const name = row.userId === profile.userId ? profile.displayName : (ownerNames[row.userId] ?? 'Unknown')
       const existing = grouped.get(row.emoji)
       if (existing) {
         existing.count += 1
         if (row.userId === profile.userId) existing.reactedByMe = true
+        if (!existing.userNames.includes(name)) existing.userNames.push(name)
       } else {
         grouped.set(row.emoji, {
           emoji: row.emoji,
           count: 1,
           reactedByMe: row.userId === profile.userId,
+          userNames: [name],
         })
       }
     }
@@ -560,9 +578,19 @@ export function FamilyChatRoom({
             <>
               <h1 className={styles.title}>{channel.name}</h1>
               {channel.owner_id === profile.userId && (
-                <button className={styles.headerGhostBtn} onClick={() => setRenaming(true)}>
-                  Rename
-                </button>
+                <>
+                  <button className={styles.headerGhostBtn} onClick={() => setRenaming(true)}>
+                    Rename
+                  </button>
+                  <button
+                    className={`${styles.headerGhostBtn} ${styles.headerDangerBtn}`}
+                    onClick={() => void handleArchiveChannel()}
+                    disabled={archivingChannel}
+                    title="Archive channel (soft delete)"
+                  >
+                    {archivingChannel ? 'Archiving...' : 'Archive'}
+                  </button>
+                </>
               )}
             </>
           )}
@@ -649,10 +677,10 @@ export function FamilyChatRoom({
                       <button
                         key={`${msg.id}-${reaction.emoji}`}
                         type="button"
-                        className={`${styles.reactionChip} ${reaction.reactedByMe ? styles.reactionChipActive : ''}`}
-                        onClick={() => void handleToggleReaction(msg.id, reaction.emoji)}
-                        title={reaction.reactedByMe ? 'Remove reaction' : 'React'}
-                      >
+                      className={`${styles.reactionChip} ${reaction.reactedByMe ? styles.reactionChipActive : ''}`}
+                      onClick={() => void handleToggleReaction(msg.id, reaction.emoji)}
+                      title={`${reaction.emoji} • ${reaction.userNames.join(', ')}`}
+                    >
                         <span>{reaction.emoji}</span>
                         <span className={styles.reactionCount}>{reaction.count}</span>
                       </button>

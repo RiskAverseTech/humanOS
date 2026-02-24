@@ -112,6 +112,38 @@
   border-color: color-mix(in srgb, var(--color-danger) 35%, var(--color-border));
 }
 
+.customThemePanel {
+  margin-top: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.customBgRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.customBgRow[aria-disabled='true'] {
+  opacity: 0.6;
+}
+
+.colorInput {
+  width: 42px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
 .avatarRow {
   display: flex;
   gap: var(--space-4);

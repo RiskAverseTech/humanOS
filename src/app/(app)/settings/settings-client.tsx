@@ -35,6 +35,8 @@ const TIMEZONE_OPTIONS = [
   { id: 'UTC', label: 'UTC' },
 ] as const
 
+const DEFAULT_CUSTOM_BG_COLOR = '#f3f7ff'
+
 type SettingsClientProps = {
   profile: Profile
   members: Array<{
@@ -164,6 +166,8 @@ function ProfileSection({ profile }: { profile: Profile }) {
   const [displayName, setDisplayName] = useState(profile.display_name)
   const [themePreference, setThemePreference] = useState(profile.theme_preference)
   const [timezonePreference, setTimezonePreference] = useState(profile.timezone_preference || 'America/New_York')
+  const [customBackgroundEnabled, setCustomBackgroundEnabled] = useState(false)
+  const [customBackgroundColor, setCustomBackgroundColor] = useState(DEFAULT_CUSTOM_BG_COLOR)
   const [notificationsEnabled, setNotificationsEnabled] = useState(profile.notifications_enabled ?? true)
   const [notificationCategories, setNotificationCategories] = useState<NotificationCategory[]>(
     profile.notification_categories?.length
@@ -225,6 +229,20 @@ function ProfileSection({ profile }: { profile: Profile }) {
     )
   }, [profile.notifications_enabled, profile.notification_categories])
 
+  useEffect(() => {
+    try {
+      setCustomBackgroundEnabled(window.localStorage.getItem('famos_custom_bg_enabled') === 'true')
+      setCustomBackgroundColor(window.localStorage.getItem('famos_custom_bg_color') || DEFAULT_CUSTOM_BG_COLOR)
+    } catch {
+      setCustomBackgroundEnabled(false)
+      setCustomBackgroundColor(DEFAULT_CUSTOM_BG_COLOR)
+    }
+  }, [])
+
+  useEffect(() => {
+    applyCustomBackgroundPreview(customBackgroundEnabled, customBackgroundColor)
+  }, [customBackgroundEnabled, customBackgroundColor])
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
@@ -237,6 +255,12 @@ function ProfileSection({ profile }: { profile: Profile }) {
       notifications_enabled: notificationsEnabled,
       notification_categories: notificationCategories,
     })
+    try {
+      window.localStorage.setItem('famos_custom_bg_enabled', String(customBackgroundEnabled))
+      window.localStorage.setItem('famos_custom_bg_color', customBackgroundColor)
+    } catch {
+      // ignore localStorage issues
+    }
     setMessage(result.success ? 'Profile updated!' : result.error || 'Failed')
     setSaving(false)
   }
@@ -438,6 +462,43 @@ function ProfileSection({ profile }: { profile: Profile }) {
               Bray mode
             </button>
           </div>
+          <div className={styles.customThemePanel}>
+            <label className={styles.checkboxRow}>
+              <input
+                type="checkbox"
+                checked={customBackgroundEnabled}
+                onChange={(e) => setCustomBackgroundEnabled(e.target.checked)}
+              />
+              <span>Use custom background color (this device)</span>
+            </label>
+            <div className={styles.customBgRow} aria-disabled={!customBackgroundEnabled}>
+              <input
+                type="color"
+                className={styles.colorInput}
+                value={customBackgroundColor}
+                disabled={!customBackgroundEnabled}
+                onChange={(e) => setCustomBackgroundColor(e.target.value)}
+              />
+              <input
+                type="text"
+                className={styles.input}
+                value={customBackgroundColor}
+                readOnly
+                disabled={!customBackgroundEnabled}
+              />
+              <button
+                type="button"
+                className={styles.secondaryBtn}
+                disabled={!customBackgroundEnabled}
+                onClick={() => setCustomBackgroundColor(DEFAULT_CUSTOM_BG_COLOR)}
+              >
+                Reset
+              </button>
+            </div>
+            <p className={styles.helperCopy}>
+              Saved in this browser/device only. Use Save Changes to keep it.
+            </p>
+          </div>
         </div>
         <div className={styles.field}>
           <label className={styles.label}>Time Zone</label>
@@ -494,6 +555,62 @@ function ProfileSection({ profile }: { profile: Profile }) {
       </form>
     </section>
   )
+}
+
+function applyCustomBackgroundPreview(enabled: boolean, color: string) {
+  if (typeof window === 'undefined') return
+  const root = document.documentElement
+  const body = document.body
+  if (!enabled) {
+    delete root.dataset.customBg
+    delete body.dataset.customBg
+    root.style.removeProperty('--user-custom-bg')
+    root.style.removeProperty('--user-custom-bg-secondary')
+    root.style.removeProperty('--user-custom-surface')
+    root.style.removeProperty('--user-custom-surface-hover')
+    root.style.removeProperty('--user-custom-border')
+    return
+  }
+
+  const normalized = normalizeHexColor(color) ?? DEFAULT_CUSTOM_BG_COLOR
+  const rgb = hexToRgb(normalized)
+  if (!rgb) return
+
+  root.dataset.customBg = 'on'
+  body.dataset.customBg = 'on'
+  root.style.setProperty('--user-custom-bg', normalized)
+  root.style.setProperty('--user-custom-bg-secondary', mixRgb(rgb, { r: 255, g: 255, b: 255 }, 0.14))
+  root.style.setProperty('--user-custom-surface', mixRgb(rgb, { r: 255, g: 255, b: 255 }, 0.32))
+  root.style.setProperty('--user-custom-surface-hover', mixRgb(rgb, { r: 255, g: 255, b: 255 }, 0.22))
+  root.style.setProperty('--user-custom-border', mixRgb(rgb, { r: 255, g: 255, b: 255 }, 0.46))
+}
+
+function normalizeHexColor(value: string): string | null {
+  const raw = value.trim()
+  if (!/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(raw)) return null
+  if (raw.length === 4) {
+    return `#${raw[1]}${raw[1]}${raw[2]}${raw[2]}${raw[3]}${raw[3]}`.toLowerCase()
+  }
+  return raw.toLowerCase()
+}
+
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  const normalized = normalizeHexColor(hex)
+  if (!normalized) return null
+  const int = Number.parseInt(normalized.slice(1), 16)
+  return { r: (int >> 16) & 255, g: (int >> 8) & 255, b: int & 255 }
+}
+
+function mixRgb(
+  base: { r: number; g: number; b: number },
+  target: { r: number; g: number; b: number },
+  targetWeight: number
+): string {
+  const w = Math.max(0, Math.min(1, targetWeight))
+  const r = Math.round(base.r * (1 - w) + target.r * w)
+  const g = Math.round(base.g * (1 - w) + target.g * w)
+  const b = Math.round(base.b * (1 - w) + target.b * w)
+  return `rgb(${r}, ${g}, ${b})`
 }
 
 function PasswordSection() {

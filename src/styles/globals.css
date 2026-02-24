@@ -168,6 +168,15 @@
   --color-border-strong: #e4abc0;
 }
 
+/* Optional user-selected background tint (local device preference) */
+[data-custom-bg='on'] {
+  --color-bg: var(--user-custom-bg);
+  --color-bg-secondary: var(--user-custom-bg-secondary);
+  --color-surface: var(--user-custom-surface);
+  --color-surface-hover: var(--user-custom-surface-hover);
+  --color-border: var(--user-custom-border);
+}
+
 /* ============================================================================
    Reset & Base Styles
    ============================================================================ */

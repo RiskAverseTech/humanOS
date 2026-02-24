@@ -398,17 +398,20 @@ export function ChatMessages({
 
   function getReactionGroups(messageId: string) {
     const rows = reactionsByMessageId[messageId] ?? []
-    const grouped = new Map<string, { emoji: string; count: number; reactedByMe: boolean }>()
+    const grouped = new Map<string, { emoji: string; count: number; reactedByMe: boolean; userNames: string[] }>()
     for (const row of rows) {
+      const name = row.userId === profile.userId ? profile.displayName : (memberNames?.[row.userId] ?? 'Unknown')
       const existing = grouped.get(row.emoji)
       if (existing) {
         existing.count += 1
         if (row.userId === profile.userId) existing.reactedByMe = true
+        if (!existing.userNames.includes(name)) existing.userNames.push(name)
       } else {
         grouped.set(row.emoji, {
           emoji: row.emoji,
           count: 1,
           reactedByMe: row.userId === profile.userId,
+          userNames: [name],
         })
       }
     }
@@ -571,6 +574,7 @@ export function ChatMessages({
                       type="button"
                       className={`${styles.reactionChip} ${reaction.reactedByMe ? styles.reactionChipActive : ''}`}
                       onClick={() => void handleToggleReaction(msg.id, reaction.emoji)}
+                      title={`${reaction.emoji} • ${reaction.userNames.join(', ')}`}
                     >
                       <span>{reaction.emoji}</span>
                       <span className={styles.reactionCount}>{reaction.count}</span>
