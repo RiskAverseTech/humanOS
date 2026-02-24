@@ -1,15 +1,15 @@
 import { notFound } from 'next/navigation'
 import { getProfile, getProfileNamesByUserIds, getProfileAvatarsByUserIds } from '@/lib/supabase/profile'
-import { FamilyChatRoom } from '../room'
-import { FamilyChatMembersPanel } from '../members-panel'
-import { FamilyChatShell } from '../shell'
+import { HumanChatRoom } from '../room'
+import { HumanChatMembersPanel } from '../members-panel'
+import { HumanChatShell } from '../shell'
 import { getFamilyChannel, getFamilyChannels, getFamilyMessages, getFamilyMessageReactions } from '../actions'
 
 type Props = {
   params: Promise<{ id: string }>
 }
 
-export default async function FamilyChatChannelPage({ params }: Props) {
+export default async function HumanChatChannelPage({ params }: Props) {
   const { id } = await params
   const [channel, channels, messages, currentProfile] = await Promise.all([
     getFamilyChannel(id),
@@ -55,17 +55,17 @@ export default async function FamilyChatChannelPage({ params }: Props) {
   }, {})
 
   return (
-    <FamilyChatShell
+    <HumanChatShell
       channels={channels}
-      rightSidebar={<FamilyChatMembersPanel members={participants} />}
+      rightSidebar={<HumanChatMembersPanel members={participants} />}
     >
-      <FamilyChatRoom
+      <HumanChatRoom
         channel={channel}
         messages={messages}
         ownerNames={ownerNames}
         ownerAvatars={ownerAvatars}
         reactionsByMessageId={reactionsByMessageId}
       />
-    </FamilyChatShell>
+    </HumanChatShell>
   )
 }

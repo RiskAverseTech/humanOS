@@ -1,10 +1,10 @@
 import { redirect } from 'next/navigation'
 import { getFamilyChannels } from './actions'
 
-export default async function FamilyChatIndexPage() {
+export default async function HumanChatIndexPage() {
   const channels = await getFamilyChannels()
   if (channels.length > 0) {
-    redirect(`/family-chat/${channels[0].id}`)
+    redirect(`/channels/${channels[0].id}`)
   }
-  redirect('/family-chat/new')
+  redirect('/channels/new')
 }

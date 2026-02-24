@@ -78,7 +78,7 @@ export function ChatLayout({ threads, threadOwnerNames, rightSidebar, children }
                       >
                         {models.map((m) => (
                           <option key={`mobile-${m.id}`} value={m.id}>
-                            {m.label}
+                            {m.label} — {m.description}
                           </option>
                         ))}
                       </select>
@@ -115,7 +115,7 @@ export function ChatLayout({ threads, threadOwnerNames, rightSidebar, children }
             >
               {models.map((m) => (
                 <option key={m.id} value={m.id}>
-                  {m.label}
+                  {m.label} — {m.description}
                 </option>
               ))}
             </select>

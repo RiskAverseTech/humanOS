@@ -31,7 +31,7 @@ export type AppBillingSettingsRow = {
 export async function updateProfile(updates: {
   display_name?: string
   avatar_url?: string | null
-  theme_preference?: 'light' | 'dark' | 'bray'
+  theme_preference?: 'light' | 'dark' | 'rose'
   timezone_preference?: string
   notifications_enabled?: boolean
   notification_categories?: Array<'notes' | 'vault' | 'todos' | 'human_chat' | 'ai_chat' | 'images'>
@@ -64,7 +64,7 @@ export async function updateProfile(updates: {
   return { success: true }
 }
 
-/** Get all family members (admin only) */
+/** Get all members (admin only) */
 export async function getFamilyMembers(): Promise<ProfileRow[]> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

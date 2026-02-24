@@ -19,6 +19,7 @@
 # misc
 .DS_Store
 *.pem
+/ai.png
 
 # debug
 npm-debug.log*
@@ -37,9 +38,5 @@ yarn-error.log*
 .next-corrupt-*/
 .next-devreset-*/
 
-# local Supabase SQL / migrations (managed separately)
-supabase/**/*.sql
-
 # typescript
 *.tsbuildinfo
-next-env.d.ts

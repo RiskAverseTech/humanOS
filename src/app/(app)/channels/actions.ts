@@ -48,13 +48,13 @@ export async function getFamilyChannels(): Promise<FamilyChannelRow[]> {
   if (!user) return []
 
   const { data, error } = await supabase
-    .from('family_chat_channels')
+    .from('human_chat_channels')
     .select('*')
     .is('archived_at', null)
     .order('updated_at', { ascending: false })
 
   if (error) {
-    console.error('Error fetching family channels:', error)
+    console.error('Error fetching human chat channels:', error)
     return []
   }
 
@@ -64,7 +64,7 @@ export async function getFamilyChannels(): Promise<FamilyChannelRow[]> {
 export async function getFamilyChannel(id: string): Promise<FamilyChannelRow | null> {
   const supabase = await createClient()
   const { data, error } = await supabase
-    .from('family_chat_channels')
+    .from('human_chat_channels')
     .select('*')
     .eq('id', id)
     .is('archived_at', null)
@@ -77,14 +77,14 @@ export async function getFamilyChannel(id: string): Promise<FamilyChannelRow | n
 export async function getFamilyMessages(channelId: string, limit = 200): Promise<FamilyMessageRow[]> {
   const supabase = await createClient()
   const { data, error } = await supabase
-    .from('family_chat_messages')
+    .from('human_chat_messages')
     .select('*')
     .eq('channel_id', channelId)
     .order('created_at', { ascending: true })
     .limit(limit)
 
   if (error) {
-    console.error('Error fetching family messages:', error)
+    console.error('Error fetching human chat messages:', error)
     return []
   }
 
@@ -96,13 +96,13 @@ export async function getFamilyMessageReactions(messageIds: string[]): Promise<F
   if (ids.length === 0) return []
   const supabase = await createClient()
   const { data, error } = await supabase
-    .from('family_chat_message_reactions')
+    .from('human_chat_message_reactions')
     .select('*')
     .in('message_id', ids)
     .order('created_at', { ascending: true })
 
   if (error) {
-    console.error('Error fetching family chat message reactions:', error)
+    console.error('Error fetching human chat message reactions:', error)
     return []
   }
 
@@ -117,7 +117,7 @@ export async function createFamilyChannel(input?: { name?: string }): Promise<st
   if (!user) return null
 
   const { data, error } = await supabase
-    .from('family_chat_channels')
+    .from('human_chat_channels')
     .insert({
       owner_id: user.id,
       name: input?.name?.trim() || 'general',
@@ -126,11 +126,11 @@ export async function createFamilyChannel(input?: { name?: string }): Promise<st
     .single()
 
   if (error) {
-    console.error('Error creating family channel:', error)
+    console.error('Error creating human chat channel:', error)
     return null
   }
 
-  revalidatePath('/family-chat')
+  revalidatePath('/channels')
   void logActivityEvent({
     actorUserId: user.id,
     category: 'human_chat',
@@ -138,7 +138,7 @@ export async function createFamilyChannel(input?: { name?: string }): Promise<st
     entityId: data.id,
     action: 'created',
     title: input?.name?.trim() || 'general',
-    href: `/family-chat/${data.id}`,
+    href: `/channels/${data.id}`,
   })
   return data.id
 }
@@ -152,13 +152,13 @@ export async function renameFamilyChannel(channelId: string, name: string) {
   if (!trimmed) return { success: false, error: 'Name is required' }
 
   const { error } = await supabase
-    .from('family_chat_channels')
+    .from('human_chat_channels')
     .update({ name: trimmed })
     .eq('id', channelId)
 
   if (error) return { success: false, error: error.message }
-  revalidatePath('/family-chat')
-  revalidatePath(`/family-chat/${channelId}`)
+  revalidatePath('/channels')
+  revalidatePath(`/channels/${channelId}`)
   if (user) {
     void logActivityEvent({
       actorUserId: user.id,
@@ -167,7 +167,7 @@ export async function renameFamilyChannel(channelId: string, name: string) {
       entityId: channelId,
       action: 'updated',
       title: trimmed,
-      href: `/family-chat/${channelId}`,
+      href: `/channels/${channelId}`,
     })
   }
   return { success: true }
@@ -181,7 +181,7 @@ export async function archiveFamilyChannel(channelId: string) {
   if (!user) return { success: false, error: 'Not authenticated' }
 
   const { data: channel, error: readError } = await supabase
-    .from('family_chat_channels')
+    .from('human_chat_channels')
     .select('id, owner_id, name')
     .eq('id', channelId)
     .single()
@@ -194,15 +194,15 @@ export async function archiveFamilyChannel(channelId: string) {
   }
 
   const { error } = await supabase
-    .from('family_chat_channels')
+    .from('human_chat_channels')
     .update({ archived_at: new Date().toISOString() })
     .eq('id', channelId)
     .eq('owner_id', user.id)
 
   if (error) return { success: false, error: error.message }
 
-  revalidatePath('/family-chat')
-  revalidatePath(`/family-chat/${channelId}`)
+  revalidatePath('/channels')
+  revalidatePath(`/channels/${channelId}`)
   void logActivityEvent({
     actorUserId: user.id,
     category: 'human_chat',
@@ -210,7 +210,7 @@ export async function archiveFamilyChannel(channelId: string) {
     entityId: channelId,
     action: 'deleted',
     title: `Archived #${channel.name}`,
-    href: '/family-chat',
+    href: '/channels',
   })
 
   return { success: true }
@@ -234,7 +234,7 @@ export async function postFamilyMessage(input: {
     return { success: false, error: 'Message is empty' }
   }
 
-  const { error } = await supabase.from('family_chat_messages').insert({
+  const { error } = await supabase.from('human_chat_messages').insert({
     channel_id: input.channelId,
     author_id: user.id,
     content,
@@ -246,12 +246,12 @@ export async function postFamilyMessage(input: {
   if (error) return { success: false, error: error.message }
 
   await supabase
-    .from('family_chat_channels')
+    .from('human_chat_channels')
     .update({ updated_at: new Date().toISOString() })
     .eq('id', input.channelId)
 
-  revalidatePath('/family-chat')
-  revalidatePath(`/family-chat/${input.channelId}`)
+  revalidatePath('/channels')
+  revalidatePath(`/channels/${input.channelId}`)
   void logActivityEvent({
     actorUserId: user.id,
     category: 'human_chat',
@@ -259,7 +259,7 @@ export async function postFamilyMessage(input: {
     entityId: input.channelId,
     action: 'message_posted',
     title: content ?? (input.imageStoragePath ? 'Shared an image' : 'Message'),
-    href: `/family-chat/${input.channelId}`,
+    href: `/channels/${input.channelId}`,
   })
   return { success: true }
 }
@@ -270,13 +270,13 @@ export async function deleteFamilyMessage(messageId: string) {
     data: { user },
   } = await supabase.auth.getUser()
   const { data: msg } = await supabase
-    .from('family_chat_messages')
+    .from('human_chat_messages')
     .select('channel_id, image_storage_path')
     .eq('id', messageId)
     .single()
 
   const { error } = await supabase
-    .from('family_chat_messages')
+    .from('human_chat_messages')
     .delete()
     .eq('id', messageId)
 
@@ -286,8 +286,8 @@ export async function deleteFamilyMessage(messageId: string) {
     await supabase.storage.from('chat-uploads').remove([msg.image_storage_path])
   }
 
-  revalidatePath('/family-chat')
-  if (msg?.channel_id) revalidatePath(`/family-chat/${msg.channel_id}`)
+  revalidatePath('/channels')
+  if (msg?.channel_id) revalidatePath(`/channels/${msg.channel_id}`)
   if (user) {
     void logActivityEvent({
       actorUserId: user.id,
@@ -296,7 +296,7 @@ export async function deleteFamilyMessage(messageId: string) {
       entityId: messageId,
       action: 'deleted',
       title: 'Deleted message',
-      href: msg?.channel_id ? `/family-chat/${msg.channel_id}` : '/family-chat',
+      href: msg?.channel_id ? `/channels/${msg.channel_id}` : '/channels',
     })
   }
   return { success: true }
@@ -317,7 +317,7 @@ export async function toggleFamilyMessageReaction(input: {
   if (!emoji) return { success: false, error: 'Emoji is required' }
 
   const { data: existing, error: existingError } = await supabase
-    .from('family_chat_message_reactions')
+    .from('human_chat_message_reactions')
     .select('id')
     .eq('message_id', input.messageId)
     .eq('user_id', user.id)
@@ -328,14 +328,14 @@ export async function toggleFamilyMessageReaction(input: {
 
   if (existing) {
     const { error } = await supabase
-      .from('family_chat_message_reactions')
+      .from('human_chat_message_reactions')
       .delete()
       .eq('id', existing.id)
       .eq('user_id', user.id)
     if (error) return { success: false, error: error.message }
   } else {
     const { error } = await supabase
-      .from('family_chat_message_reactions')
+      .from('human_chat_message_reactions')
       .insert({
         message_id: input.messageId,
         user_id: user.id,
@@ -344,11 +344,11 @@ export async function toggleFamilyMessageReaction(input: {
     if (error) return { success: false, error: error.message }
   }
 
-  revalidatePath(`/family-chat/${input.channelId}`)
+  revalidatePath(`/channels/${input.channelId}`)
   return { success: true }
 }
 
-export async function getFamilyChatUploadUrl(storagePath: string): Promise<string | null> {
+export async function getHumanChatUploadUrl(storagePath: string): Promise<string | null> {
   const supabase = await createClient()
   const { data, error } = await supabase.storage
     .from('chat-uploads')
@@ -361,7 +361,7 @@ export async function getFamilyChatUploadUrl(storagePath: string): Promise<strin
   return data.signedUrl
 }
 
-export async function getGeneratedImagesForFamilyChatPicker(limit = 24): Promise<FamilyGeneratedImagePickerItem[]> {
+export async function getGeneratedImagesForHumanChatPicker(limit = 24): Promise<FamilyGeneratedImagePickerItem[]> {
   const supabase = await createClient()
   const {
     data: { user },
@@ -397,7 +397,7 @@ export async function getGeneratedImagesForFamilyChatPicker(limit = 24): Promise
   return items
 }
 
-export async function copyGeneratedImageToFamilyChatUpload(imageId: string): Promise<{
+export async function copyGeneratedImageToHumanChatUpload(imageId: string): Promise<{
   success: boolean
   error?: string
   attachment?: {

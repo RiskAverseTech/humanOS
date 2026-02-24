@@ -455,11 +455,11 @@ function ProfileSection({ profile }: { profile: Profile }) {
             </button>
             <button
               type="button"
-              className={`${styles.themeChip} ${themePreference === 'bray' ? styles.themeChipActive : ''} ${styles.themeChipBray}`}
-              onClick={() => setThemePreference('bray')}
-              aria-pressed={themePreference === 'bray'}
+              className={`${styles.themeChip} ${themePreference === 'rose' ? styles.themeChipActive : ''} ${styles.themeChipRose}`}
+              onClick={() => setThemePreference('rose')}
+              aria-pressed={themePreference === 'rose'}
             >
-              Bray mode
+              Rose mode
             </button>
           </div>
           <div className={styles.customThemePanel}>
@@ -695,7 +695,7 @@ function FamilyMembersSection({
 
   return (
     <section className={styles.section}>
-      <h2 className={styles.sectionTitle}>Family Members</h2>
+      <h2 className={styles.sectionTitle}>Members</h2>
       <div className={styles.memberList}>
         {members.map((member) => (
           <div key={member.id} className={styles.memberCard}>
@@ -718,7 +718,7 @@ function FamilyMembersSection({
                 }
               >
                 <option value="admin">Admin</option>
-                <option value="partner">Partner</option>
+                <option value="partner">Member</option>
                 <option value="child">Child</option>
               </select>
             )}
@@ -764,7 +764,7 @@ function InviteSection() {
 
   return (
     <section className={styles.section}>
-      <h2 className={styles.sectionTitle}>Invite Family Member</h2>
+      <h2 className={styles.sectionTitle}>Invite Member</h2>
       <form onSubmit={handleInvite} className={styles.form}>
         <div className={styles.inlineFields}>
           <input
@@ -780,8 +780,8 @@ function InviteSection() {
             value={role}
             onChange={(e) => setRole(e.target.value as 'partner' | 'child')}
           >
-            <option value="partner">Partner (adult)</option>
-            <option value="child">Child</option>
+            <option value="partner">Member (adult)</option>
+            <option value="child">Child (minor)</option>
           </select>
           <button type="submit" className={styles.primaryBtn} disabled={sending}>
             {sending ? 'Sending...' : 'Send Invite'}

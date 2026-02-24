@@ -7,10 +7,10 @@ import { useProfile } from '@/components/providers/profile-provider'
 import { EmojiPickerButton } from '@/components/ui/emoji-picker'
 import {
   archiveFamilyChannel,
-  copyGeneratedImageToFamilyChatUpload,
+  copyGeneratedImageToHumanChatUpload,
   deleteFamilyMessage,
-  getGeneratedImagesForFamilyChatPicker,
-  getFamilyChatUploadUrl,
+  getGeneratedImagesForHumanChatPicker,
+  getHumanChatUploadUrl,
   postFamilyMessage,
   renameFamilyChannel,
   toggleFamilyMessageReaction,
@@ -44,7 +44,7 @@ type GiphyPickerItem = {
 const QUICK_REACTIONS = ['👍', '❤️', '😂'] as const
 const GIPHY_API_KEY = process.env.NEXT_PUBLIC_GIPHY_API_KEY ?? ''
 
-export function FamilyChatRoom({
+export function HumanChatRoom({
   channel,
   messages: initialMessages,
   ownerNames,
@@ -242,7 +242,7 @@ export function FamilyChatRoom({
       const next: Record<string, string> = {}
       for (const msg of initialMessages) {
         if (!msg.image_storage_path) continue
-        const signed = await getFamilyChatUploadUrl(msg.image_storage_path)
+        const signed = await getHumanChatUploadUrl(msg.image_storage_path)
         if (signed) next[msg.id] = signed
       }
       if (active) setImageUrls(next)
@@ -352,7 +352,7 @@ export function FamilyChatRoom({
     const result = await archiveFamilyChannel(channel.id)
     setArchivingChannel(false)
     if (result.success) {
-      router.push('/family-chat')
+      router.push('/channels')
       return
     }
     window.alert(result.error || 'Could not archive channel')
@@ -455,7 +455,7 @@ export function FamilyChatRoom({
     setGeneratedPickerLoading(true)
     setGeneratedPickerError('')
     try {
-      const items = await getGeneratedImagesForFamilyChatPicker(24)
+      const items = await getGeneratedImagesForHumanChatPicker(24)
       setGeneratedPickerItems(items)
     } catch {
       setGeneratedPickerError('Could not load generated images.')
@@ -467,7 +467,7 @@ export function FamilyChatRoom({
   async function handleSelectGeneratedImage(imageId: string) {
     setSelectingGeneratedImageId(imageId)
     setGeneratedPickerError('')
-    const result = await copyGeneratedImageToFamilyChatUpload(imageId)
+    const result = await copyGeneratedImageToHumanChatUpload(imageId)
     setSelectingGeneratedImageId(null)
     if (!result.success || !result.attachment) {
       setGeneratedPickerError(result.error || 'Could not attach selected image.')
@@ -920,7 +920,7 @@ export function FamilyChatRoom({
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleComposerKeyDown}
             onPaste={handlePaste}
-            placeholder="Message the family... (paste image or upload, emojis work 🙂)"
+            placeholder="Message the channel... (paste image or upload, emojis work 🙂)"
             rows={2}
             disabled={sending}
           />
@@ -993,7 +993,7 @@ export function FamilyChatRoom({
                 className={styles.giphySearchInput}
                 value={gifQuery}
                 onChange={(e) => setGifQuery(e.target.value)}
-                placeholder="Search GIFs (family-safe)"
+                placeholder="Search GIFs (rated G)"
               />
               <button type="submit" className={styles.headerGhostBtn} disabled={gifLoading}>
                 {gifLoading ? '...' : 'Search'}

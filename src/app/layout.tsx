@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import '@/styles/globals.css'
 
 export const metadata: Metadata = {
-  title: 'FamilyOS',
-  description: 'Private family platform for notes, documents, and AI',
+  title: 'HumanOS',
+  description: 'Private community platform for notes, files, chat, and AI',
 }
 
 export default function RootLayout({

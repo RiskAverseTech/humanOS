@@ -17,6 +17,7 @@ export function ImagesClient({ images, ownerNames }: ImagesClientProps) {
   const [mode, setMode] = useState<'generate' | 'edit'>('generate')
   const [prompt, setPrompt] = useState('')
   const [size, setSize] = useState<'1024x1024' | '1024x1536' | '1536x1024'>('1024x1024')
+  const [imageModel, setImageModel] = useState<'gpt-image-1.5' | 'grok-imagine-image'>('gpt-image-1.5')
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState('')
   const [selectedImage, setSelectedImage] = useState<GeneratedImageRow | null>(null)
@@ -59,6 +60,7 @@ export function ImagesClient({ images, ownerNames }: ImagesClientProps) {
           formData.append('mode', 'edit')
           formData.append('prompt', prompt.trim())
           formData.append('size', size)
+          formData.append('model', imageModel)
           formData.append('image', editUploadFile, editUploadFile.name || 'edit-source.png')
           return fetch('/api/images', {
             method: 'POST',
@@ -73,6 +75,7 @@ export function ImagesClient({ images, ownerNames }: ImagesClientProps) {
             mode,
             prompt: prompt.trim(),
             size,
+            model: imageModel,
             sourceStoragePath: editSource?.storage_path,
           }),
         })
@@ -217,7 +220,10 @@ export function ImagesClient({ images, ownerNames }: ImagesClientProps) {
           <button
             type="button"
             className={`${styles.modeTab} ${mode === 'edit' ? styles.modeTabActive : ''}`}
-            onClick={() => setMode('edit')}
+            onClick={() => {
+              setMode('edit')
+              if (imageModel === 'grok-imagine-image') setImageModel('gpt-image-1.5')
+            }}
             disabled={generating}
           >
             Edit Existing
@@ -225,14 +231,24 @@ export function ImagesClient({ images, ownerNames }: ImagesClientProps) {
         </div>
 
         <div className={styles.formMeta}>
-          <span className={styles.modelBadge}>Default model: GPT Image 1.5</span>
+          <span className={styles.modelBadge}>Model</span>
+          <select
+            className={styles.sizeSelect}
+            value={imageModel}
+            onChange={(e) => setImageModel(e.target.value as typeof imageModel)}
+            disabled={generating}
+            aria-label="Image model"
+          >
+            <option value="gpt-image-1.5">GPT Image 1.5</option>
+            <option value="grok-imagine-image">Grok Imagine</option>
+          </select>
           {mode === 'edit' && (
             <span className={styles.editHint}>
               {editSource
                 ? `Editing: ${editSource.prompt}`
                 : editUploadFile
                   ? `Editing uploaded image: ${editUploadFile.name}`
-                  : 'Pick an image from the gallery or upload one to edit.'}
+                  : 'Pick an image from the gallery or upload one to edit. (Edit mode uses GPT Image)'}
             </span>
           )}
         </div>

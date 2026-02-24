@@ -1,11 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
-    <linearGradient id="gzBg" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="hosBg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#2563eb" />
       <stop offset="100%" stop-color="#e75480" />
     </linearGradient>
   </defs>
-  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#gzBg)" />
-  <path d="M24 21h15v4H28v8h8.5v4H28v2h11v4H24V21z" fill="#fff"/>
-  <path d="M41 21h17v4.2L47.6 39H58v4H41v-4.1l10.4-13.7H41V21z" fill="#fff"/>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#hosBg)" />
+  <text
+    x="32"
+    y="39"
+    text-anchor="middle"
+    font-family="system-ui, -apple-system, Segoe UI, sans-serif"
+    font-size="21"
+    font-weight="700"
+    letter-spacing="0.5"
+    fill="#ffffff"
+  >
+    HOS
+  </text>
 </svg>

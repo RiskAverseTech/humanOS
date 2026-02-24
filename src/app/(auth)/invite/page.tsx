@@ -125,7 +125,7 @@ function InviteForm() {
   if (status === 'invalid') {
     return (
       <div className={styles.messageError}>
-        This invite link is invalid or has expired. Ask your family admin for a new one.
+        This invite link is invalid or has expired. Ask your admin for a new one.
       </div>
     )
   }

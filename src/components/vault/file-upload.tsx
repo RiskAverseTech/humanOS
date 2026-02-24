@@ -122,7 +122,7 @@ export function FileUpload({ folderPath, onUploadComplete }: FileUploadProps) {
               checked={shareWithFamily}
               onChange={(e) => setShareWithFamily(e.target.checked)}
             />
-            <span>{shareWithFamily ? 'Shared by default (family can view)' : 'Private upload'}</span>
+            <span>{shareWithFamily ? 'Shared by default (members can view)' : 'Private upload'}</span>
           </label>
         </>
       )}

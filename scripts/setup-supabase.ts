@@ -1,5 +1,5 @@
 /**
- * FamilyOS – Supabase Setup Script
+ * HumanOS – Supabase Setup Script
  *
  * Run this script once to apply the database migrations to your Supabase project.
  *
@@ -40,7 +40,7 @@ async function runMigrations() {
     .filter((f) => f.endsWith('.sql'))
     .sort()
 
-  console.log(`\n🏗️  FamilyOS Supabase Setup`)
+  console.log(`\n🏗️  HumanOS Supabase Setup`)
   console.log(`   Found ${files.length} migration files\n`)
 
   for (const file of files) {

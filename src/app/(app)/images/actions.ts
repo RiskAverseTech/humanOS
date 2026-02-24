@@ -13,7 +13,7 @@ export type GeneratedImageRow = {
   created_at: string
 }
 
-/** Fetch all generated images (gallery view — all family members can see) */
+/** Fetch all generated images (gallery view — all members can see) */
 export async function getGeneratedImages(): Promise<GeneratedImageRow[]> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

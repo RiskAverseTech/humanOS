@@ -176,7 +176,7 @@ export function NoteEditorView({ note, isNew, initialFolder }: NoteEditorViewPro
               checked={isShared}
               onChange={(e) => setIsShared(e.target.checked)}
             />
-            <span>Share with family</span>
+            <span>Share with members</span>
           </label>
         </div>
       </div>

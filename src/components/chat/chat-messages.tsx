@@ -500,7 +500,7 @@ export function ChatMessages({
                   thread.owner_id === profile.userId
                     ? isShared
                       ? 'Click to make this chat private'
-                      : 'Click to share with family'
+                      : 'Click to share with members'
                     : undefined
                 }
               >
@@ -717,6 +717,7 @@ export function ChatMessages({
 function getAiDisplayName(modelId: string): string {
   const value = modelId.toLowerCase()
   if (value.includes('claude')) return 'Claude AI'
+  if (value.includes('grok')) return 'Grok AI'
   if (value.includes('gpt') || value.includes('openai') || value.includes('o1') || value.includes('o3')) {
     return 'ChatGPT AI'
   }

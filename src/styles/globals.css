@@ -1,5 +1,5 @@
 /* ============================================================================
-   FamilyOS – Design Tokens (CSS Custom Properties)
+   HumanOS – Design Tokens (CSS Custom Properties)
    ============================================================================ */
 
 :root {
@@ -136,8 +136,8 @@
   --shadow-xl:   0 20px 36px rgba(0, 0, 0, 0.4);
 }
 
-/* Bray mode: warm light pink theme */
-[data-theme='bray'] {
+/* Rose mode: warm light pink theme */
+[data-theme='rose'] {
   --color-bg:            #fff5f8;
   --color-bg-secondary:  #ffeaf2;
   --color-bg-tertiary:   #ffdce9;

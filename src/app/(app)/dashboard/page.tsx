@@ -55,7 +55,7 @@ export default async function DashboardPage() {
       .order('created_at', { ascending: false })
       .limit(3),
     supabase
-      .from('family_chat_channels')
+      .from('human_chat_channels')
       .select('id, name, updated_at, owner_id')
       .eq('owner_id', userId!)
       .order('updated_at', { ascending: false })
@@ -86,7 +86,7 @@ export default async function DashboardPage() {
         .in('user_id', threadOwnerIds)
     : { data: [] as Array<{ user_id: string; role: UserRole }> }
 
-  const billing = estimateFamilyOSCosts({
+  const billing = estimatePlatformCosts({
     threads: (allThreads ?? []) as Array<{ id: string; owner_id: string; model: string }>,
     messages: (allMessages ?? []) as Array<{
       thread_id: string
@@ -133,10 +133,10 @@ export default async function DashboardPage() {
         <StatCard label="Images" count={recentImages?.length ?? 0} icon="🎨" />
       </div>
 
-      <section className={styles.billCard} aria-label="Daddy Bill cost estimate">
+      <section className={styles.billCard} aria-label="Platform AI bill estimate">
         <div className={styles.billHeader}>
           <div>
-            <h2 className={styles.billTitle}>Daddy&apos;s AI Bill</h2>
+            <h2 className={styles.billTitle}>Platform AI Bill</h2>
             <p className={styles.billSubtitle}>Estimated platform spend (chat + image APIs)</p>
           </div>
           <div className={styles.billTotal}>
@@ -235,7 +235,7 @@ type AppBillingSettingsRow = {
   billing_fallback_image_per_image: number
 }
 
-function estimateFamilyOSCosts(input: BillingInput) {
+function estimatePlatformCosts(input: BillingInput) {
   const pricingRow = input.pricing
   const CHAT_PRICES_PER_MTOK: Record<string, { input: number; output: number }> = {
     'gpt-4o': {

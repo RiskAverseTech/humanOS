@@ -13,7 +13,7 @@ const NAV_ITEMS = [
   { href: '/notes', label: 'Notes', icon: '📝' },
   { href: '/vault', label: 'Vault', icon: '📁' },
   { href: '/todos', label: 'To Dos', icon: '📌' },
-  { href: '/family-chat', label: 'Human Chat', icon: '🗨️' },
+  { href: '/channels', label: 'Human Chat', icon: '🗨️' },
   { href: '/chat', label: 'AI Chat', icon: '💬' },
   { href: '/images', label: 'Images', icon: '🎨', permission: 'canGenerateImages' as const },
 ]
@@ -103,7 +103,7 @@ export function Sidebar() {
       <aside className={`${styles.sidebar} ${mobileOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.header}>
           <Link href="/dashboard" className={styles.brand}>
-            FamilyOS
+            HumanOS
           </Link>
           <div className={styles.headerActions}>
             <NotificationBell />

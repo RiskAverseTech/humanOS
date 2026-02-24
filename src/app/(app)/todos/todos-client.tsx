@@ -42,7 +42,7 @@ export function TodosClient({ cards, itemsByCardId, ownerNames }: Props) {
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>To Dos</h1>
-          <p className={styles.subtitle}>Sticky list cards for quick family tasks</p>
+          <p className={styles.subtitle}>Sticky list cards for quick shared tasks</p>
         </div>
         <button className={styles.addCardBtn} onClick={() => setShowCreateModal(true)} disabled={creating}>
           {creating ? 'Adding...' : '+ New Sticky List'}
@@ -65,7 +65,7 @@ export function TodosClient({ cards, itemsByCardId, ownerNames }: Props) {
               </button>
             </div>
             <p className={styles.createModalText}>
-              Give this sticky list a name. It will be shared with the family by default.
+              Give this sticky list a name. It will be shared with members by default.
             </p>
             <input
               className={styles.createModalInput}

@@ -3,7 +3,7 @@ import { getProfile, getProfileNamesByUserIds, getProfileAvatarsByUserIds } from
 import { getThread, getThreads, getMessages, getChatMessageReactions } from '../actions'
 import { ChatLayout } from '../chat-layout'
 import { ChatMessages } from '@/components/chat/chat-messages'
-import { FamilyChatMembersPanel } from '@/app/(app)/family-chat/members-panel'
+import { HumanChatMembersPanel } from '@/app/(app)/channels/members-panel'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -75,7 +75,7 @@ export default async function ChatThreadPage({ params }: Props) {
     <ChatLayout
       threads={threads}
       threadOwnerNames={threadOwnerNames}
-      rightSidebar={<FamilyChatMembersPanel members={aiParticipants} />}
+      rightSidebar={<HumanChatMembersPanel members={aiParticipants} />}
     >
       <ChatMessages
         thread={thread}
@@ -92,6 +92,7 @@ export default async function ChatThreadPage({ params }: Props) {
 function getAiDisplayName(modelId: string): string {
   const value = modelId.toLowerCase()
   if (value.includes('claude')) return 'Claude AI'
+  if (value.includes('grok')) return 'Grok AI'
   if (value.includes('gpt') || value.includes('openai') || value.includes('o1') || value.includes('o3')) {
     return 'ChatGPT AI'
   }

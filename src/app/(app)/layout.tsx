@@ -31,6 +31,19 @@ export default async function AppLayout({
         <Sidebar />
         <main className={styles.main}>
           {children}
+          <footer className={styles.footer}>
+            <span className={styles.footerText}>
+              HumanOS is open source by{' '}
+              <a
+                href="https://www.riskaversetechnology.company/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Risk Averse Tech
+              </a>
+              .
+            </span>
+          </footer>
         </main>
       </div>
     </ProfileProvider>

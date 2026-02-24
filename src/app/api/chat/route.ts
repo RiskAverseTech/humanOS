@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { getAnthropicClient, getOpenAIClient } from '@/lib/ai/client'
+import { getAnthropicClient, getOpenAIClient, getXAIClient } from '@/lib/ai/client'
 import { getSystemPrompt, getModelById, getDefaultModelId } from '@/lib/ai/prompts'
 import type { UserRole } from '@/lib/supabase/types'
 import { logActivityEvent } from '@/lib/activity/events'
@@ -10,7 +10,7 @@ export const runtime = 'edge'
  * POST /api/chat
  * Streams an AI response for the given thread.
  * Supports both Anthropic (Claude) and OpenAI (GPT) models.
- * Multiple family members can chat in the same shared thread concurrently.
+ * Multiple members can chat in the same shared thread concurrently.
  *
  * Body: {
  *   threadId: string
@@ -81,6 +81,13 @@ export async function POST(request: Request) {
       )
     }
 
+    if (modelDef.provider === 'xai' && !process.env.XAI_API_KEY) {
+      return new Response(
+        'Grok chat is not configured. Add XAI_API_KEY or start a Claude / OpenAI chat.',
+        { status: 503 }
+      )
+    }
+
     // Verify thread access (RLS handles this)
     const { data: thread, error: threadError } = await supabase
       .from('chat_threads')
@@ -137,8 +144,12 @@ export async function POST(request: Request) {
             await streamAnthropic(controller, encoder, modelId, systemPrompt, messages, (text) => {
               fullResponse += text
             })
+          } else if (modelDef.provider === 'xai') {
+            await streamOpenAICompatible(getXAIClient(), controller, encoder, modelId, systemPrompt, messages, (text) => {
+              fullResponse += text
+            })
           } else {
-            await streamOpenAI(controller, encoder, modelId, systemPrompt, messages, (text) => {
+            await streamOpenAICompatible(getOpenAIClient(), controller, encoder, modelId, systemPrompt, messages, (text) => {
               fullResponse += text
             })
           }
@@ -210,7 +221,8 @@ async function streamAnthropic(
 }
 
 /** Stream from OpenAI (GPT) */
-async function streamOpenAI(
+async function streamOpenAICompatible(
+  openai: ReturnType<typeof getOpenAIClient>,
   controller: ReadableStreamDefaultController,
   encoder: TextEncoder,
   model: string,
@@ -218,8 +230,6 @@ async function streamOpenAI(
   messages: Array<{ role: 'user' | 'assistant'; content: string }>,
   onText: (text: string) => void
 ) {
-  const openai = getOpenAIClient()
-
   const stream = await openai.chat.completions.create({
     model,
     max_tokens: 4096,

@@ -11,7 +11,7 @@ type Member = {
   badge?: string
 }
 
-export function FamilyChatMembersPanel({
+export function HumanChatMembersPanel({
   members,
 }: {
   members: Member[]

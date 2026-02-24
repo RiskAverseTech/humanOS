@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createFamilyChannel, type FamilyChannelRow } from './actions'
 import styles from './shell.module.css'
 
-export function FamilyChatShell({
+export function HumanChatShell({
   channels,
   rightSidebar,
   children,
@@ -24,7 +24,7 @@ export function FamilyChatShell({
     setCreating(true)
     const id = await createFamilyChannel({ name: channels.length === 0 ? 'general' : 'new-channel' })
     setCreating(false)
-    if (id) router.push(`/family-chat/${id}`)
+    if (id) router.push(`/channels/${id}`)
   }
 
   return (
@@ -63,7 +63,7 @@ export function FamilyChatShell({
                 <div className={styles.sidebarHeader}>
                   <div>
                     <h2 className={styles.sidebarTitle}>Human Chat</h2>
-                    <p className={styles.sidebarSubtitle}>Family channels</p>
+                    <p className={styles.sidebarSubtitle}>Channels</p>
                   </div>
                   <button className={styles.newButton} onClick={handleCreate} disabled={creating}>
                     {creating ? '...' : '+'}
@@ -71,7 +71,7 @@ export function FamilyChatShell({
                 </div>
                 <div className={styles.channelList}>
                   {channels.map((channel) => {
-                    const href = `/family-chat/${channel.id}`
+                    const href = `/channels/${channel.id}`
                     const active = pathname === href
                     return (
                       <Link
@@ -99,7 +99,7 @@ export function FamilyChatShell({
         <div className={styles.sidebarHeader}>
           <div>
             <h2 className={styles.sidebarTitle}>Human Chat</h2>
-            <p className={styles.sidebarSubtitle}>Family channels</p>
+            <p className={styles.sidebarSubtitle}>Channels</p>
           </div>
           <button className={styles.newButton} onClick={handleCreate} disabled={creating}>
             {creating ? '...' : '+'}
@@ -108,7 +108,7 @@ export function FamilyChatShell({
 
         <div className={styles.channelList}>
           {channels.map((channel) => {
-            const href = `/family-chat/${channel.id}`
+            const href = `/channels/${channel.id}`
             const active = pathname === href
             return (
               <Link key={channel.id} href={href} className={`${styles.channelItem} ${active ? styles.active : ''}`}>

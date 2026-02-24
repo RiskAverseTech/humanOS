@@ -9,8 +9,8 @@ export default function AuthLayout({
     <div className={styles.wrapper}>
       <div className={styles.card}>
         <div className={styles.logo}>
-          <h1 className={styles.title}>FamilyOS</h1>
-          <p className={styles.subtitle}>Your private family hub</p>
+          <h1 className={styles.title}>HumanOS</h1>
+          <p className={styles.subtitle}>Your private community hub</p>
         </div>
         {children}
       </div>

@@ -3,6 +3,9 @@ import { createClient } from '@/lib/supabase/server'
 import { logActivityEvent } from '@/lib/activity/events'
 
 const DEFAULT_IMAGE_MODEL = 'gpt-image-1.5'
+const GROK_IMAGE_MODEL = 'grok-imagine-image'
+type ImageModel = typeof DEFAULT_IMAGE_MODEL | typeof GROK_IMAGE_MODEL
+type ImageSize = '1024x1024' | '1024x1536' | '1536x1024'
 
 /**
  * POST /api/images
@@ -43,7 +46,8 @@ export async function POST(request: Request) {
 
     let prompt = ''
     let mode: 'generate' | 'edit' = 'generate'
-    let size: '1024x1024' | '1024x1536' | '1536x1024' = '1024x1024'
+    let size: ImageSize = '1024x1024'
+    let model: ImageModel = DEFAULT_IMAGE_MODEL
     let sourceStoragePath: string | undefined
     let sourceUploadFile: File | null = null
 
@@ -53,6 +57,7 @@ export async function POST(request: Request) {
       prompt = String(form.get('prompt') ?? '')
       const modeValue = String(form.get('mode') ?? 'generate')
       const sizeValue = String(form.get('size') ?? '1024x1024')
+      const modelValue = String(form.get('model') ?? DEFAULT_IMAGE_MODEL)
       sourceStoragePath = form.get('sourceStoragePath') ? String(form.get('sourceStoragePath')) : undefined
       const filePart = form.get('image')
       sourceUploadFile = filePart instanceof File ? filePart : null
@@ -60,17 +65,22 @@ export async function POST(request: Request) {
       if (sizeValue === '1024x1024' || sizeValue === '1024x1536' || sizeValue === '1536x1024') {
         size = sizeValue
       }
+      if (modelValue === DEFAULT_IMAGE_MODEL || modelValue === GROK_IMAGE_MODEL) {
+        model = modelValue
+      }
     } else {
       const body = await request.json()
       const parsed = body as {
         prompt: string
         mode?: 'generate' | 'edit'
-        size?: '1024x1024' | '1024x1536' | '1536x1024'
+        size?: ImageSize
+        model?: ImageModel
         sourceStoragePath?: string
       }
       prompt = parsed.prompt
       mode = parsed.mode ?? 'generate'
       size = parsed.size ?? '1024x1024'
+      model = parsed.model ?? DEFAULT_IMAGE_MODEL
       sourceStoragePath = parsed.sourceStoragePath
     }
 
@@ -86,45 +96,65 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Select or upload an image to edit first.' }, { status: 400 })
     }
 
-    // Check for API key
-    if (!process.env.OPENAI_API_KEY) {
+    if (mode === 'edit' && model === GROK_IMAGE_MODEL) {
+      return NextResponse.json(
+        { error: 'Grok Imagine edits are not supported yet. Use GPT Image for edit mode.' },
+        { status: 400 }
+      )
+    }
+
+    if (model === GROK_IMAGE_MODEL && !process.env.XAI_API_KEY) {
+      return NextResponse.json(
+        { error: 'Grok Imagine is not configured. Add XAI_API_KEY to environment.' },
+        { status: 503 }
+      )
+    }
+
+    if (model === DEFAULT_IMAGE_MODEL && !process.env.OPENAI_API_KEY) {
       return NextResponse.json(
         { error: 'Image generation is not configured. Add OPENAI_API_KEY to environment.' },
         { status: 503 }
       )
     }
 
-    const openaiResponse =
-      mode === 'edit'
+    const imageApiResponse =
+      model === GROK_IMAGE_MODEL
+        ? await callGrokImageGenerate({
+            apiKey: process.env.XAI_API_KEY!,
+            prompt: prompt.trim(),
+            size,
+          })
+        : mode === 'edit'
         ? sourceUploadFile
           ? await callOpenAIImageEditWithUpload({
-              apiKey: process.env.OPENAI_API_KEY,
+              apiKey: process.env.OPENAI_API_KEY!,
               prompt: prompt.trim(),
               size,
               imageFile: sourceUploadFile,
             })
           : await callOpenAIImageEdit({
-              apiKey: process.env.OPENAI_API_KEY,
+              apiKey: process.env.OPENAI_API_KEY!,
               prompt: prompt.trim(),
               size,
               sourceStoragePath: sourceStoragePath!,
               supabase,
             })
         : await callOpenAIImageGenerate({
-            apiKey: process.env.OPENAI_API_KEY,
+            apiKey: process.env.OPENAI_API_KEY!,
             prompt: prompt.trim(),
             size,
           })
 
-    if (!openaiResponse.ok) {
-      const err = await openaiResponse.json().catch(() => ({}))
+    if (!imageApiResponse.ok) {
+      const err = await imageApiResponse.json().catch(() => ({}))
       const message =
         (err as { error?: { message?: string } })?.error?.message ||
+        (err as { error?: string })?.error ||
         (mode === 'edit' ? 'Image edit failed' : 'Image generation failed')
-      return NextResponse.json({ error: message }, { status: openaiResponse.status })
+      return NextResponse.json({ error: message }, { status: imageApiResponse.status })
     }
 
-    const result = (await openaiResponse.json()) as {
+    const result = (await imageApiResponse.json()) as {
       data?: Array<{ url?: string; b64_json?: string; revised_prompt?: string }>
     }
     const first = result.data?.[0]
@@ -160,7 +190,7 @@ export async function POST(request: Request) {
         owner_id: user.id,
         prompt,
         storage_path: storagePath,
-        model: DEFAULT_IMAGE_MODEL,
+        model,
       })
       .select('id')
       .single()
@@ -191,7 +221,7 @@ export async function POST(request: Request) {
 async function callOpenAIImageGenerate(input: {
   apiKey: string
   prompt: string
-  size: '1024x1024' | '1024x1536' | '1536x1024'
+  size: ImageSize
 }) {
   return fetch('https://api.openai.com/v1/images/generations', {
     method: 'POST',
@@ -211,7 +241,7 @@ async function callOpenAIImageGenerate(input: {
 async function callOpenAIImageEdit(input: {
   apiKey: string
   prompt: string
-  size: '1024x1024' | '1024x1536' | '1536x1024'
+  size: ImageSize
   sourceStoragePath: string
   supabase: Awaited<ReturnType<typeof createClient>>
 }) {
@@ -241,7 +271,7 @@ async function callOpenAIImageEdit(input: {
 async function callOpenAIImageEditWithUpload(input: {
   apiKey: string
   prompt: string
-  size: '1024x1024' | '1024x1536' | '1536x1024'
+  size: ImageSize
   imageFile: File
 }) {
   const formData = new FormData()
@@ -257,6 +287,32 @@ async function callOpenAIImageEditWithUpload(input: {
     },
     body: formData,
   })
+}
+
+async function callGrokImageGenerate(input: {
+  apiKey: string
+  prompt: string
+  size: ImageSize
+}) {
+  return fetch('https://api.x.ai/v1/images/generations', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${input.apiKey}`,
+    },
+    body: JSON.stringify({
+      model: GROK_IMAGE_MODEL,
+      prompt: input.prompt,
+      n: 1,
+      aspect_ratio: mapSizeToAspectRatio(input.size),
+    }),
+  })
+}
+
+function mapSizeToAspectRatio(size: ImageSize): '1:1' | '2:3' | '3:2' {
+  if (size === '1024x1536') return '2:3'
+  if (size === '1536x1024') return '3:2'
+  return '1:1'
 }
 
 async function openAIImageResponseToBlob(image: {

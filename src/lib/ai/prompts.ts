@@ -1,7 +1,7 @@
 import type { UserRole } from '@/lib/supabase/types'
 
 /** Base system prompt for all users */
-const BASE_SYSTEM_PROMPT = `You are a helpful family AI assistant called FamilyOS.
+const BASE_SYSTEM_PROMPT = `You are a helpful AI assistant for a private community platform called HumanOS.
 You are warm, friendly, and concise. You help with questions, creative writing, homework, planning, and general knowledge.
 Keep answers clear and well-formatted using markdown when appropriate.`
 
@@ -33,7 +33,7 @@ export type ChatModel = {
   id: string
   label: string
   description: string
-  provider: 'anthropic' | 'openai'
+  provider: 'anthropic' | 'openai' | 'xai'
 }
 
 /** All available chat models */
@@ -41,20 +41,28 @@ const ALL_MODELS: ChatModel[] = [
   {
     id: 'claude-sonnet-4-20250514',
     label: 'Claude Sonnet',
-    description: 'Fast & capable',
+    description: 'Technical',
     provider: 'anthropic',
   },
   {
     id: 'gpt-4o',
     label: 'GPT-4o',
-    description: 'OpenAI flagship',
+    description: 'Well rounded',
     provider: 'openai',
+  },
+  {
+    id: 'grok-2-latest',
+    label: 'Grok',
+    description: 'Truth seeking',
+    provider: 'xai',
   },
 ]
 
 /** Available models filtered by role */
 export function getAvailableModels(role: UserRole): ChatModel[] {
-  void role
+  if (role === 'child') {
+    return ALL_MODELS.filter((m) => m.provider === 'anthropic')
+  }
   return ALL_MODELS
 }
 

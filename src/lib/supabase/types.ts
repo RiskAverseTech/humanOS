@@ -1,5 +1,5 @@
 export type UserRole = 'admin' | 'partner' | 'child'
-export type ThemePreference = 'light' | 'dark' | 'bray'
+export type ThemePreference = 'light' | 'dark' | 'rose'
 export type NotificationCategory = 'notes' | 'vault' | 'todos' | 'human_chat' | 'ai_chat' | 'images'
 export type TimezonePreference = string
 
@@ -345,7 +345,7 @@ export type Database = {
           }
         ]
       }
-      family_chat_channels: {
+      human_chat_channels: {
         Row: {
           id: string
           owner_id: string
@@ -372,7 +372,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'family_chat_channels_owner_id_fkey'
+            foreignKeyName: 'human_chat_channels_owner_id_fkey'
             columns: ['owner_id']
             isOneToOne: false
             referencedRelation: 'users'
@@ -380,7 +380,7 @@ export type Database = {
           }
         ]
       }
-      family_chat_messages: {
+      human_chat_messages: {
         Row: {
           id: string
           channel_id: string
@@ -413,14 +413,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'family_chat_messages_channel_id_fkey'
+            foreignKeyName: 'human_chat_messages_channel_id_fkey'
             columns: ['channel_id']
             isOneToOne: false
-            referencedRelation: 'family_chat_channels'
+            referencedRelation: 'human_chat_channels'
             referencedColumns: ['id']
           },
           {
-            foreignKeyName: 'family_chat_messages_author_id_fkey'
+            foreignKeyName: 'human_chat_messages_author_id_fkey'
             columns: ['author_id']
             isOneToOne: false
             referencedRelation: 'users'
@@ -428,7 +428,7 @@ export type Database = {
           }
         ]
       }
-      family_chat_message_reactions: {
+      human_chat_message_reactions: {
         Row: {
           id: string
           message_id: string
@@ -452,14 +452,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'family_chat_message_reactions_message_id_fkey'
+            foreignKeyName: 'human_chat_message_reactions_message_id_fkey'
             columns: ['message_id']
             isOneToOne: false
-            referencedRelation: 'family_chat_messages'
+            referencedRelation: 'human_chat_messages'
             referencedColumns: ['id']
           },
           {
-            foreignKeyName: 'family_chat_message_reactions_user_id_fkey'
+            foreignKeyName: 'human_chat_message_reactions_user_id_fkey'
             columns: ['user_id']
             isOneToOne: false
             referencedRelation: 'users'
