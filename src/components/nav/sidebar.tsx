@@ -85,9 +85,10 @@ export function Sidebar() {
     <>
       {/* Mobile hamburger button */}
       <button
-        className={styles.hamburger}
+        className={`${styles.hamburger} ${mobileOpen ? styles.hamburgerHidden : ''}`}
         onClick={() => setMobileOpen(true)}
         aria-label="Open navigation"
+        aria-hidden={mobileOpen}
       >
         <span className={styles.hamburgerBar} />
         <span className={styles.hamburgerBar} />

@@ -591,17 +591,43 @@
 
 @media (max-width: 768px) {
   .room {
-    height: auto;
-    max-height: none;
-    min-height: calc(100vh - var(--space-12));
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+  }
+
+  .header {
+    padding-bottom: var(--space-2);
+    margin-bottom: 0;
+  }
+
+  .messages {
+    padding-top: var(--space-2);
+    padding-bottom: var(--space-2);
   }
 
   .composerRow {
     align-items: stretch;
+    gap: 6px;
   }
 
   .sendBtn {
     min-width: 64px;
+  }
+
+  .composer {
+    padding-bottom: calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
+    background: var(--color-bg);
+  }
+
+  .textarea {
+    min-height: 42px;
+    padding: 8px 10px;
+  }
+
+  .attachBtn {
+    width: 38px;
+    height: 38px;
   }
 
   .pickerGrid {

@@ -26,6 +26,7 @@ export function ImagesClient({ images, ownerNames }: ImagesClientProps) {
   const [editUploadFile, setEditUploadFile] = useState<File | null>(null)
   const [editUploadPreviewUrl, setEditUploadPreviewUrl] = useState<string | null>(null)
   const editUploadInputRef = useRef<HTMLInputElement>(null)
+  const lightboxTouchStartXRef = useRef<number | null>(null)
 
   // Load signed URLs for gallery thumbnails
   useEffect(() => {
@@ -108,6 +109,22 @@ export function ImagesClient({ images, ownerNames }: ImagesClientProps) {
     setSelectedUrl(url)
   }
 
+  async function openImageByIndex(index: number) {
+    const next = images[index]
+    if (!next) return
+    setSelectedImage(next)
+    const url = imageUrls[next.id] || (await getImageUrl(next.storage_path))
+    setSelectedUrl(url)
+  }
+
+  async function navigateSelected(delta: number) {
+    if (!selectedImage || images.length <= 1) return
+    const currentIndex = images.findIndex((img) => img.id === selectedImage.id)
+    if (currentIndex < 0) return
+    const nextIndex = (currentIndex + delta + images.length) % images.length
+    await openImageByIndex(nextIndex)
+  }
+
   async function handleDelete(image: GeneratedImageRow) {
     if (!confirm('Delete this image?')) return
     await deleteGeneratedImage(image.id, image.storage_path)
@@ -166,6 +183,21 @@ export function ImagesClient({ images, ownerNames }: ImagesClientProps) {
       if (editUploadPreviewUrl) URL.revokeObjectURL(editUploadPreviewUrl)
     }
   }, [editUploadPreviewUrl])
+
+  useEffect(() => {
+    if (!selectedImage) return
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        void navigateSelected(-1)
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        void navigateSelected(1)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [selectedImage, images, imageUrls])
 
   return (
     <div className={styles.container}>
@@ -350,12 +382,48 @@ export function ImagesClient({ images, ownerNames }: ImagesClientProps) {
                 </button>
               </div>
             </div>
-            {selectedUrl ? (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={selectedUrl} alt={selectedImage.prompt} className={styles.lightboxImage} />
-            ) : (
-              <p className={styles.loading}>Loading...</p>
-            )}
+            <div
+              className={styles.lightboxImageWrap}
+              onTouchStart={(e) => {
+                lightboxTouchStartXRef.current = e.changedTouches[0]?.clientX ?? null
+              }}
+              onTouchEnd={(e) => {
+                const startX = lightboxTouchStartXRef.current
+                const endX = e.changedTouches[0]?.clientX ?? null
+                lightboxTouchStartXRef.current = null
+                if (startX == null || endX == null) return
+                const dx = endX - startX
+                if (Math.abs(dx) < 40) return
+                void navigateSelected(dx < 0 ? 1 : -1)
+              }}
+            >
+              {images.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    className={`${styles.lightboxNavBtn} ${styles.lightboxNavPrev}`}
+                    onClick={() => void navigateSelected(-1)}
+                    aria-label="Previous image"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.lightboxNavBtn} ${styles.lightboxNavNext}`}
+                    onClick={() => void navigateSelected(1)}
+                    aria-label="Next image"
+                  >
+                    ›
+                  </button>
+                </>
+              )}
+              {selectedUrl ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={selectedUrl} alt={selectedImage.prompt} className={styles.lightboxImage} />
+              ) : (
+                <p className={styles.loading}>Loading...</p>
+              )}
+            </div>
             <div className={styles.lightboxMeta}>
               <span>{selectedImage.model}</span>
               <span>By {ownerNames[selectedImage.owner_id] ?? 'Unknown'}</span>
@@ -366,6 +434,11 @@ export function ImagesClient({ images, ownerNames }: ImagesClientProps) {
                   year: 'numeric',
                 })}
               </span>
+              {images.length > 1 && (
+                <span>
+                  {images.findIndex((img) => img.id === selectedImage.id) + 1} / {images.length}
+                </span>
+              )}
             </div>
           </div>
         </div>

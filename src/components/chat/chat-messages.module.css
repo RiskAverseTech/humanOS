@@ -651,8 +651,15 @@
 }
 
 @media (max-width: 768px) {
+  .container {
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+  }
+
   .header {
     align-items: flex-start;
+    padding: var(--space-2) 0;
   }
 
   .renameRow {
@@ -666,5 +673,28 @@
 
   .messageRow {
     padding: var(--space-2) var(--space-1);
+    gap: var(--space-2);
+  }
+
+  .avatar {
+    width: 32px;
+    height: 32px;
+  }
+
+  .messages {
+    padding: var(--space-2) 0;
+  }
+
+  .inputForm {
+    padding: var(--space-2) 0 calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
+  }
+
+  .textarea {
+    min-height: 42px;
+    padding: 8px 10px;
+  }
+
+  .reactionActions {
+    right: 0;
   }
 }

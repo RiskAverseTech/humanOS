@@ -1,19 +1,41 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import styles from '@/components/ui/form-styles.module.css'
 
 type AuthMode = 'magic-link' | 'password'
 
 export default function LoginPage() {
+  const router = useRouter()
   const [mode, setMode] = useState<AuthMode>('magic-link')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
 
-  const supabase = createClient()
+  const [supabase] = useState(() => createClient())
+
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        router.replace('/dashboard')
+        router.refresh()
+      }
+    })
+
+    void supabase.auth.getSession().then(({ data }) => {
+      if (data.session) {
+        router.replace('/dashboard')
+        router.refresh()
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [router, supabase])
 
   async function handleMagicLink(e: React.FormEvent) {
     e.preventDefault()
@@ -48,8 +70,10 @@ export default function LoginPage() {
 
     if (error) {
       setMessage({ type: 'error', text: error.message })
+    } else {
+      router.replace('/dashboard')
+      router.refresh()
     }
-    // On success, middleware handles redirect to /dashboard
 
     setLoading(false)
   }

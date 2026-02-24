@@ -20,6 +20,7 @@ export function ChatLayout({ threads, threadOwnerNames, rightSidebar, children }
   const profile = useProfile()
   const models = getAvailableModels(profile.role)
   const [selectedModel, setSelectedModel] = useState(getDefaultModelId())
+  const [mobilePanel, setMobilePanel] = useState<'threads' | 'members' | null>(null)
 
   async function handleNewChat() {
     const threadId = await createThread({
@@ -32,6 +33,69 @@ export function ChatLayout({ threads, threadOwnerNames, rightSidebar, children }
 
   return (
     <div className={`${styles.container} ${rightSidebar ? styles.containerWithRight : ''}`} data-full-width="human-chat">
+      <div className={styles.mobileTopBar}>
+        <button type="button" className={styles.mobileTopBtn} onClick={() => setMobilePanel('threads')}>
+          Chats
+        </button>
+        {rightSidebar && (
+          <button type="button" className={styles.mobileTopBtn} onClick={() => setMobilePanel('members')}>
+            Members
+          </button>
+        )}
+      </div>
+
+      {mobilePanel && (
+        <>
+          <button
+            type="button"
+            className={styles.mobilePanelBackdrop}
+            onClick={() => setMobilePanel(null)}
+            aria-label="Close panel"
+          />
+          <aside className={styles.mobilePanel}>
+            <div className={styles.mobilePanelHeader}>
+              <strong>{mobilePanel === 'threads' ? 'AI Chats' : 'In This Chat'}</strong>
+              <button type="button" className={styles.mobilePanelClose} onClick={() => setMobilePanel(null)}>
+                &times;
+              </button>
+            </div>
+            <div className={styles.mobilePanelBody}>
+              {mobilePanel === 'threads' ? (
+                <>
+                  <div className={styles.sidebarHeader}>
+                    <h2 className={styles.sidebarTitle}>Chats</h2>
+                    <button className={styles.newButton} onClick={handleNewChat}>
+                      + New
+                    </button>
+                  </div>
+                  {models.length > 1 && (
+                    <div className={styles.modelPicker}>
+                      <label className={styles.modelLabel}>New chat model:</label>
+                      <select
+                        className={styles.modelSelect}
+                        value={selectedModel}
+                        onChange={(e) => setSelectedModel(e.target.value)}
+                      >
+                        {models.map((m) => (
+                          <option key={`mobile-${m.id}`} value={m.id}>
+                            {m.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  <div onClick={() => setMobilePanel(null)}>
+                    <ThreadList threads={threads} ownerNames={threadOwnerNames} />
+                  </div>
+                </>
+              ) : (
+                rightSidebar
+              )}
+            </div>
+          </aside>
+        </>
+      )}
+
       <aside className={styles.sidebar}>
         <div className={styles.sidebarHeader}>
           <h2 className={styles.sidebarTitle}>Chats</h2>

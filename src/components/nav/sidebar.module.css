@@ -377,6 +377,11 @@
   box-shadow: var(--shadow-sm);
 }
 
+.hamburgerHidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .hamburgerBar {
   display: block;
   width: 100%;
@@ -405,6 +410,7 @@
   }
 
   .sidebar {
+    width: min(86vw, 320px);
     position: fixed;
     top: 0;
     left: 0;
@@ -421,6 +427,23 @@
 
   .closeBtn {
     display: flex;
+  }
+
+  .header {
+    padding: var(--space-3);
+  }
+
+  .nav {
+    padding: var(--space-2);
+  }
+
+  .navItem {
+    padding: var(--space-2);
+    gap: var(--space-2);
+  }
+
+  .footer {
+    padding: var(--space-3);
   }
 
   .notifyPanel {
