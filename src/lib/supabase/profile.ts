@@ -8,6 +8,7 @@ export type Profile = {
   role: UserRole
   avatar_url: string | null
   theme_preference: ThemePreference
+  timezone_preference: string
   notifications_enabled: boolean
   notification_categories: NotificationCategory[]
   notifications_last_seen_at: string

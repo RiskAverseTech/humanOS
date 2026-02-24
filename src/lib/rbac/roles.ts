@@ -24,7 +24,7 @@ export const ROLE_PERMISSIONS = {
   child: {
     canManageUsers: false,
     canInviteUsers: false,
-    canGenerateImages: false, // disabled by default
+    canGenerateImages: true,
     canUseAdvancedModels: false,
     canDeleteAnyNote: false,
     canViewAllContent: false,

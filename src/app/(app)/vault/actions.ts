@@ -129,6 +129,18 @@ export async function updateDocument(
   const {
     data: { user },
   } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
+
+  const { data: existing } = await supabase
+    .from('documents')
+    .select('owner_id')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (!existing) return { success: false, error: 'Document not found' }
+  if (existing.owner_id !== user.id) {
+    return { success: false, error: 'Only the uploader can update this document' }
+  }
 
   const { error } = await supabase
     .from('documents')
@@ -161,13 +173,21 @@ export async function deleteDocument(id: string) {
   const {
     data: { user },
   } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
 
   // Get the storage path first
   const { data: doc } = await supabase
     .from('documents')
-    .select('storage_path, file_name')
+    .select('owner_id, storage_path, file_name')
     .eq('id', id)
     .single()
+
+  if (!doc) {
+    return { success: false, error: 'Document not found' }
+  }
+  if (doc.owner_id !== user.id) {
+    return { success: false, error: 'Only the uploader can delete this document' }
+  }
 
   if (doc) {
     await supabase.storage.from('documents').remove([doc.storage_path])

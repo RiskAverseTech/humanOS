@@ -32,6 +32,7 @@ export async function updateProfile(updates: {
   display_name?: string
   avatar_url?: string | null
   theme_preference?: 'light' | 'dark' | 'bray'
+  timezone_preference?: string
   notifications_enabled?: boolean
   notification_categories?: Array<'notes' | 'vault' | 'todos' | 'human_chat' | 'ai_chat' | 'images'>
 }) {

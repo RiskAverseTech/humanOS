@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { useProfile } from '@/components/providers/profile-provider'
 import { FileUpload } from '@/components/vault/file-upload'
 import { DocumentPreview, getFileIcon, formatFileSize } from '@/components/vault/document-preview'
 import { createDocumentRecord, updateDocument, deleteDocument, type DocumentRow } from './actions'
@@ -27,6 +28,7 @@ export function VaultClient({
   searchQuery,
 }: VaultClientProps) {
   const router = useRouter()
+  const profile = useProfile()
   const [search, setSearch] = useState(searchQuery ?? '')
   const [previewDoc, setPreviewDoc] = useState<DocumentRow | null>(null)
   const [showUpload, setShowUpload] = useState(false)
@@ -148,7 +150,9 @@ export function VaultClient({
             </div>
           ) : (
             <div className={styles.grid}>
-              {documents.map((doc) => (
+              {documents.map((doc) => {
+                const isOwner = doc.owner_id === profile.userId
+                return (
                 <div key={doc.id} className={styles.card}>
                   <div
                     className={styles.cardPreview}
@@ -175,23 +179,28 @@ export function VaultClient({
                       </span>
                     </div>
                     <div className={styles.cardActions}>
-                      <button
-                        className={`${styles.sharedChip} ${doc.is_shared ? styles.sharedActive : ''}`}
-                        onClick={() => handleToggleShared(doc)}
-                        title={doc.is_shared ? 'Click to make private' : 'Click to share'}
-                      >
-                        {doc.is_shared ? 'Shared' : 'Private'}
-                      </button>
-                      <button
-                        className={styles.deleteBtn}
-                        onClick={() => handleDelete(doc.id)}
-                      >
-                        &times;
-                      </button>
+                      {isOwner && (
+                        <>
+                          <button
+                            className={`${styles.sharedChip} ${doc.is_shared ? styles.sharedActive : ''}`}
+                            onClick={() => handleToggleShared(doc)}
+                            title={doc.is_shared ? 'Click to make private' : 'Click to share'}
+                          >
+                            {doc.is_shared ? 'Shared' : 'Private'}
+                          </button>
+                          <button
+                            className={styles.deleteBtn}
+                            onClick={() => handleDelete(doc.id)}
+                          >
+                            &times;
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>

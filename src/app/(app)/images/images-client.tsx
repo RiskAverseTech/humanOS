@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useProfile } from '@/components/providers/profile-provider'
 import { getImageUrl, deleteGeneratedImage, type GeneratedImageRow } from './actions'
 import styles from './images-client.module.css'
 
@@ -12,6 +13,7 @@ type ImagesClientProps = {
 
 export function ImagesClient({ images, ownerNames }: ImagesClientProps) {
   const router = useRouter()
+  const profile = useProfile()
   const [mode, setMode] = useState<'generate' | 'edit'>('generate')
   const [prompt, setPrompt] = useState('')
   const [size, setSize] = useState<'1024x1024' | '1024x1536' | '1536x1024'>('1024x1024')
@@ -335,9 +337,11 @@ export function ImagesClient({ images, ownerNames }: ImagesClientProps) {
                     Download
                   </a>
                 )}
-                <button className={styles.deleteBtn} onClick={() => handleDelete(selectedImage)}>
-                  Delete
-                </button>
+                {selectedImage.owner_id === profile.userId && (
+                  <button className={styles.deleteBtn} onClick={() => handleDelete(selectedImage)}>
+                    Delete
+                  </button>
+                )}
                 <button className={styles.editBtn} onClick={() => handleStartEdit(selectedImage)}>
                   Edit this image
                 </button>

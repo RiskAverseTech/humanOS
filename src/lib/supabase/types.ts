@@ -1,6 +1,7 @@
 export type UserRole = 'admin' | 'partner' | 'child'
 export type ThemePreference = 'light' | 'dark' | 'bray'
 export type NotificationCategory = 'notes' | 'vault' | 'todos' | 'human_chat' | 'ai_chat' | 'images'
+export type TimezonePreference = string
 
 export type Database = {
   public: {
@@ -13,6 +14,7 @@ export type Database = {
           role: UserRole
           avatar_url: string | null
           theme_preference: ThemePreference
+          timezone_preference: TimezonePreference
           notifications_enabled: boolean
           notification_categories: NotificationCategory[]
           notifications_last_seen_at: string
@@ -25,6 +27,7 @@ export type Database = {
           role?: UserRole
           avatar_url?: string | null
           theme_preference?: ThemePreference
+          timezone_preference?: TimezonePreference
           notifications_enabled?: boolean
           notification_categories?: NotificationCategory[]
           notifications_last_seen_at?: string
@@ -37,6 +40,7 @@ export type Database = {
           role?: UserRole
           avatar_url?: string | null
           theme_preference?: ThemePreference
+          timezone_preference?: TimezonePreference
           notifications_enabled?: boolean
           notification_categories?: NotificationCategory[]
           notifications_last_seen_at?: string

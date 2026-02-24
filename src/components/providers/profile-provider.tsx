@@ -10,6 +10,7 @@ export type ProfileContext = {
   role: UserRole
   avatarUrl: string | null
   themePreference: ThemePreference
+  timezonePreference?: string
 }
 
 const Context = createContext<ProfileContext | null>(null)

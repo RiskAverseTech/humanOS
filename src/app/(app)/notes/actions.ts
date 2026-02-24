@@ -163,7 +163,22 @@ export async function deleteNote(id: string) {
   const {
     data: { user },
   } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
   const { data: existing } = await supabase.from('notes').select('title').eq('id', id).maybeSingle()
+
+  const { data: noteOwner } = await supabase
+    .from('notes')
+    .select('owner_id')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (!noteOwner) {
+    return { success: false, error: 'Note not found' }
+  }
+
+  if (noteOwner.owner_id !== user.id) {
+    return { success: false, error: 'Only the note owner can delete this note' }
+  }
 
   const { error } = await supabase
     .from('notes')
@@ -193,6 +208,8 @@ export async function deleteNote(id: string) {
 /** Rename a virtual folder by moving all notes with that folder_path */
 export async function renameNoteFolder(oldFolder: string, newFolder: string) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
   const trimmedOld = oldFolder.trim()
   const trimmedNew = newFolder.trim()
   if (!trimmedOld) return { success: false, error: 'Source folder is required' }
@@ -201,6 +218,7 @@ export async function renameNoteFolder(oldFolder: string, newFolder: string) {
   const { error } = await supabase
     .from('notes')
     .update({ folder_path: trimmedNew })
+    .eq('owner_id', user.id)
     .eq('folder_path', trimmedOld)
 
   if (error) {
@@ -215,12 +233,15 @@ export async function renameNoteFolder(oldFolder: string, newFolder: string) {
 /** Delete a virtual folder by clearing folder_path from notes in that folder */
 export async function deleteNoteFolder(folder: string) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
   const trimmed = folder.trim()
   if (!trimmed) return { success: false, error: 'Folder is required' }
 
   const { error } = await supabase
     .from('notes')
     .update({ folder_path: null })
+    .eq('owner_id', user.id)
     .eq('folder_path', trimmed)
 
   if (error) {
@@ -241,6 +262,7 @@ export async function getNoteFolders(): Promise<string[]> {
   const { data } = await supabase
     .from('notes')
     .select('folder_path')
+    .eq('owner_id', user.id)
     .not('folder_path', 'is', null)
 
   if (!data) return []
@@ -258,6 +280,7 @@ export async function getNoteTags(): Promise<string[]> {
   const { data } = await supabase
     .from('notes')
     .select('tags')
+    .eq('owner_id', user.id)
 
   if (!data) return []
 

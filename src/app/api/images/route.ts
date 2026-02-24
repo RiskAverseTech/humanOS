@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import type { UserRole } from '@/lib/supabase/types'
 import { logActivityEvent } from '@/lib/activity/events'
 
 const DEFAULT_IMAGE_MODEL = 'gpt-image-1.5'
 
 /**
  * POST /api/images
- * Adults-only: Generate or edit an image via OpenAI Images API.
+ * Generate or edit an image via OpenAI Images API.
  *
  * Body:
  * {
@@ -31,7 +30,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check role — adults only
+    // Check role
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
@@ -40,14 +39,6 @@ export async function POST(request: Request) {
 
     if (!profile) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
-    }
-
-    const role = profile.role as UserRole
-    if (role === 'child') {
-      return NextResponse.json(
-        { error: 'Image generation is not available for your account.' },
-        { status: 403 }
-      )
     }
 
     let prompt = ''

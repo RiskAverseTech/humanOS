@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { TiptapEditor } from '@/components/editor/tiptap-editor'
+import { useProfile } from '@/components/providers/profile-provider'
 import { updateNote, deleteNote, createNote, type NoteRow } from './actions'
 import styles from './note-editor-view.module.css'
 
@@ -14,6 +15,7 @@ type NoteEditorViewProps = {
 
 export function NoteEditorView({ note, isNew, initialFolder }: NoteEditorViewProps) {
   const router = useRouter()
+  const profile = useProfile()
   const [title, setTitle] = useState(note?.title ?? '')
   const [content, setContent] = useState(note?.content ?? '')
   const [isShared, setIsShared] = useState(note?.is_shared ?? true)
@@ -127,7 +129,7 @@ export function NoteEditorView({ note, isNew, initialFolder }: NoteEditorViewPro
           <button className={styles.saveButton} onClick={handleSave} disabled={saving}>
             {isNew && !noteId ? 'Create' : 'Save'}
           </button>
-          {noteId && (
+          {noteId && (!note || note.owner_id === profile.userId) && (
             <button className={styles.deleteButton} onClick={handleDelete}>
               Delete
             </button>

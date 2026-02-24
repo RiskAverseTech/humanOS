@@ -22,6 +22,7 @@ export default async function AppLayout({
     role: profile.role,
     avatarUrl: profile.avatar_url,
     themePreference: profile.theme_preference,
+    timezonePreference: profile.timezone_preference,
   }
 
   return (

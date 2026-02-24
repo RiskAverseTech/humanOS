@@ -16,7 +16,6 @@ const NAV_ITEMS = [
   { href: '/family-chat', label: 'Human Chat', icon: '🗨️' },
   { href: '/chat', label: 'AI Chat', icon: '💬' },
   { href: '/images', label: 'Images', icon: '🎨', permission: 'canGenerateImages' as const },
-  { href: '/settings', label: 'Settings', icon: '⚙️' },
 ]
 
 export function Sidebar() {
@@ -148,6 +147,13 @@ export function Sidebar() {
               <span className={styles.profileRole}>{profile.role}</span>
             </div>
           </div>
+          <Link
+            href="/settings"
+            className={`${styles.footerLink} ${pathname.startsWith('/settings') ? styles.footerLinkActive : ''}`}
+          >
+            <span className={styles.footerLinkIcon}>⚙️</span>
+            <span>Settings</span>
+          </Link>
           <SignOutButton />
         </div>
       </aside>

@@ -54,7 +54,17 @@ export async function deleteGeneratedImage(id: string, storagePath: string) {
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  const { data: existing } = await supabase.from('generated_images').select('prompt').eq('id', id).maybeSingle()
+  if (!user) return { success: false, error: 'Not authenticated' }
+  const { data: existing } = await supabase
+    .from('generated_images')
+    .select('owner_id, prompt')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (!existing) return { success: false, error: 'Image not found' }
+  if (existing.owner_id !== user.id) {
+    return { success: false, error: 'Only the creator can delete this image' }
+  }
 
   await supabase.storage.from('generated-images').remove([storagePath])
 

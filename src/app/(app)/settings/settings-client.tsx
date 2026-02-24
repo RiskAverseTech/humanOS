@@ -24,6 +24,17 @@ const NOTIFICATION_CATEGORY_OPTIONS: Array<{ id: NotificationCategory; label: st
   { id: 'images', label: 'Images' },
 ]
 
+const TIMEZONE_OPTIONS = [
+  { id: 'America/New_York', label: 'Eastern (EST/EDT)' },
+  { id: 'America/Chicago', label: 'Central (CST/CDT)' },
+  { id: 'America/Denver', label: 'Mountain (MST/MDT)' },
+  { id: 'America/Los_Angeles', label: 'Pacific (PST/PDT)' },
+  { id: 'America/Phoenix', label: 'Arizona (MST)' },
+  { id: 'America/Anchorage', label: 'Alaska (AKST/AKDT)' },
+  { id: 'Pacific/Honolulu', label: 'Hawaii (HST)' },
+  { id: 'UTC', label: 'UTC' },
+] as const
+
 type SettingsClientProps = {
   profile: Profile
   members: Array<{
@@ -152,6 +163,7 @@ function ProfileSection({ profile }: { profile: Profile }) {
   const router = useRouter()
   const [displayName, setDisplayName] = useState(profile.display_name)
   const [themePreference, setThemePreference] = useState(profile.theme_preference)
+  const [timezonePreference, setTimezonePreference] = useState(profile.timezone_preference || 'America/New_York')
   const [notificationsEnabled, setNotificationsEnabled] = useState(profile.notifications_enabled ?? true)
   const [notificationCategories, setNotificationCategories] = useState<NotificationCategory[]>(
     profile.notification_categories?.length
@@ -204,6 +216,7 @@ function ProfileSection({ profile }: { profile: Profile }) {
   }, [profile.avatar_url])
 
   useEffect(() => {
+    setTimezonePreference(profile.timezone_preference || 'America/New_York')
     setNotificationsEnabled(profile.notifications_enabled ?? true)
     setNotificationCategories(
       profile.notification_categories?.length
@@ -220,6 +233,7 @@ function ProfileSection({ profile }: { profile: Profile }) {
     const result = await updateProfile({
       display_name: displayName,
       theme_preference: themePreference,
+      timezone_preference: timezonePreference,
       notifications_enabled: notificationsEnabled,
       notification_categories: notificationCategories,
     })
@@ -424,6 +438,23 @@ function ProfileSection({ profile }: { profile: Profile }) {
               Bray mode
             </button>
           </div>
+        </div>
+        <div className={styles.field}>
+          <label className={styles.label}>Time Zone</label>
+          <select
+            className={styles.input}
+            value={timezonePreference}
+            onChange={(e) => setTimezonePreference(e.target.value)}
+          >
+            {TIMEZONE_OPTIONS.map((tz) => (
+              <option key={tz.id} value={tz.id}>
+                {tz.label}
+              </option>
+            ))}
+          </select>
+          <p className={styles.helperCopy}>
+            Used for dashboard activity timestamps. Default is Eastern time.
+          </p>
         </div>
         <div className={styles.field}>
           <label className={styles.label}>Notifications</label>

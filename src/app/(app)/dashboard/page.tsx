@@ -8,6 +8,7 @@ import styles from './dashboard.module.css'
 
 export default async function DashboardPage() {
   const profile = await getProfile()
+  const timezone = profile?.timezone_preference || 'America/New_York'
   const supabase = await createClient()
   const { data: billingSettings } = await supabase
     .from('app_settings')
@@ -261,12 +262,7 @@ export default async function DashboardPage() {
                   {item.ownerName && <span className={styles.activityOwner}>By {item.ownerName}</span>}
                 </div>
                 <span className={styles.activityDate}>
-                  {new Date(item.date).toLocaleDateString('en-AU', {
-                    day: 'numeric',
-                    month: 'short',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
+                  {formatActivityDate(item.date, timezone)}
                 </span>
               </Link>
             ))}
@@ -275,6 +271,27 @@ export default async function DashboardPage() {
       </div>
     </div>
   )
+}
+
+function formatActivityDate(dateIso: string, timeZone: string): string {
+  const date = new Date(dateIso)
+  try {
+    return new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(date)
+  } catch {
+    return new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(date)
+  }
 }
 
 type BillingInput = {
