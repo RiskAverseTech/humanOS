@@ -93,7 +93,10 @@ export async function getNotificationEvents(options?: {
     .from('activity_events')
     .select('id, actor_user_id, category, title, href, created_at')
     .order('created_at', { ascending: false })
-    .limit(options?.limit ?? 30)
+
+  if (typeof options?.limit === 'number') {
+    query = query.limit(options.limit)
+  }
 
   if (options?.categories?.length) {
     query = query.in('category', options.categories)
@@ -107,7 +110,7 @@ export async function getNotificationEvents(options?: {
         error.code === 'PGRST205' ||
         (typeof error.message === 'string' && error.message.includes('activity_events'))
       ) {
-        const fallback = await getActivityFeed({ maxItems: options?.limit ?? 30 })
+        const fallback = await getActivityFeed({ maxItems: options?.limit ?? 500 })
         const categoryMap: Record<NotificationEventItem['type'], NotificationCategory> = {
           note: 'notes',
           document: 'vault',

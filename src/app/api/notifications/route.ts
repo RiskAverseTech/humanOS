@@ -34,14 +34,13 @@ export async function GET() {
   const categories = ((profile.notification_categories as NotificationCategory[] | null) ?? DEFAULT_CATEGORIES)
   const lastSeen = profile.notifications_last_seen_at ?? new Date(0).toISOString()
 
-  const rawItems = enabled ? await getNotificationEvents({ categories, limit: 40 }) : []
+  const rawItems = enabled ? await getNotificationEvents({ categories }) : []
   const filteredItems: NotificationItem[] = rawItems
     .filter((item) => item.ownerId !== user.id)
     .map((item) => {
       const unread = new Date(item.date).getTime() > new Date(lastSeen).getTime()
       return { ...item, unread }
     })
-    .slice(0, 20)
 
   const unreadCount = enabled ? filteredItems.filter((i) => i.unread).length : 0
 

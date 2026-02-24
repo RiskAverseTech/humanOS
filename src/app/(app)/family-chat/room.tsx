@@ -82,6 +82,10 @@ export function FamilyChatRoom({
   const userTookScrollControlRef = useRef(false)
   const programmaticScrollRef = useRef(false)
   const suppressScrollEventsUntilRef = useRef<number>(0)
+  const nearBottomRef = useRef(true)
+  const pendingIncomingAutoScrollRef = useRef(false)
+  const prevRenderedMessageCountRef = useRef(initialMessages.length)
+  const prevRenderedLastMessageIdRef = useRef<string | null>(initialMessages.at(-1)?.id ?? null)
 
   const initialImageMessageIds = messages
     .filter((msg) => Boolean(msg.image_storage_path))
@@ -93,6 +97,7 @@ export function FamilyChatRoom({
     suppressScrollEventsUntilRef.current = Date.now() + 250
     messagesRef.current.scrollTop = messagesRef.current.scrollHeight
     messagesEndRef.current?.scrollIntoView({ block: 'end' })
+    nearBottomRef.current = true
     window.setTimeout(() => {
       programmaticScrollRef.current = false
     }, 120)
@@ -197,10 +202,24 @@ export function FamilyChatRoom({
   }, [ownerAvatars])
 
   useEffect(() => {
+    const nextLastMessageId = initialMessages.at(-1)?.id ?? null
+    const isSameChannel = prevChannelIdRef.current === channel.id
+    const hasNewMessages =
+      isSameChannel &&
+      (initialMessages.length > prevRenderedMessageCountRef.current ||
+        (nextLastMessageId !== null && nextLastMessageId !== prevRenderedLastMessageIdRef.current))
+
+    if (initialPositioned && hasNewMessages && nearBottomRef.current) {
+      pendingIncomingAutoScrollRef.current = true
+    }
+
     setMessages(initialMessages)
     if (!renaming && !savingName) {
       setDraftName(channel.name)
     }
+
+    prevRenderedMessageCountRef.current = initialMessages.length
+    prevRenderedLastMessageIdRef.current = nextLastMessageId
   }, [initialMessages, channel.id, channel.name, renaming, savingName])
 
   useEffect(() => {
@@ -218,6 +237,10 @@ export function FamilyChatRoom({
     clearAnchorTimeouts(initialPostRevealAnchorsRef)
     clearAnchorTimeouts(postSendAnchorTimeoutsRef)
     stopAnchorTicker()
+    nearBottomRef.current = true
+    pendingIncomingAutoScrollRef.current = false
+    prevRenderedMessageCountRef.current = initialMessages.length
+    prevRenderedLastMessageIdRef.current = initialMessages.at(-1)?.id ?? null
     prevChannelIdRef.current = channel.id
   }, [channel.id])
 
@@ -284,6 +307,13 @@ export function FamilyChatRoom({
       scrollMessagesToBottom()
     })
   }, [imageUrls, messages.length, initialPositioned])
+
+  useEffect(() => {
+    if (!initialPositioned) return
+    if (!pendingIncomingAutoScrollRef.current) return
+    pendingIncomingAutoScrollRef.current = false
+    startAutoAnchorWindow(1400)
+  }, [messages.length, imageUrls, initialPositioned])
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -481,6 +511,11 @@ export function FamilyChatRoom({
 
   function handleMessagesScroll() {
     if (!initialPositioned) return
+    if (messagesRef.current) {
+      const distanceFromBottom =
+        messagesRef.current.scrollHeight - messagesRef.current.scrollTop - messagesRef.current.clientHeight
+      nearBottomRef.current = distanceFromBottom <= 80
+    }
     if (programmaticScrollRef.current) return
     if (Date.now() <= suppressScrollEventsUntilRef.current) return
     userTookScrollControlRef.current = true

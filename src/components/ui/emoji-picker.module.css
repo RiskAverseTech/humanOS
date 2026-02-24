@@ -35,7 +35,7 @@
   position: absolute;
   bottom: calc(100% + 8px);
   left: 0;
-  width: min(280px, 72vw);
+  width: min(320px, 82vw);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -49,12 +49,45 @@
   right: 0;
 }
 
+.panelBelow {
+  bottom: auto;
+  top: calc(100% + 8px);
+}
+
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
   padding: 0 var(--space-1) var(--space-2);
+}
+
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin: 0 0 var(--space-2);
+}
+
+.tab {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  min-height: 28px;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+}
+
+.tab:hover {
+  background: var(--color-surface-hover);
+}
+
+.tabActive {
+  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+  background: color-mix(in srgb, var(--color-primary-light) 65%, var(--color-surface));
 }
 
 .title {
@@ -75,6 +108,9 @@
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   gap: 4px;
+  max-height: min(260px, 42vh);
+  overflow: auto;
+  padding-right: 2px;
 }
 
 .emojiBtn {
@@ -99,4 +135,10 @@
   padding: 0;
   margin: 0;
   z-index: var(--z-overlay);
+}
+
+@media (max-width: 520px) {
+  .tabs {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
