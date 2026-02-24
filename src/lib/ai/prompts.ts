@@ -54,10 +54,7 @@ const ALL_MODELS: ChatModel[] = [
 
 /** Available models filtered by role */
 export function getAvailableModels(role: UserRole): ChatModel[] {
-  if (role === 'child') {
-    // Child only gets Claude Sonnet (more controllable with system prompt)
-    return ALL_MODELS.filter((m) => m.id === 'claude-sonnet-4-20250514')
-  }
+  void role
   return ALL_MODELS
 }
 

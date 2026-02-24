@@ -40,10 +40,19 @@ export async function updateProfile(updates: {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Not authenticated' }
 
-  const { error } = await supabase
+  let { error } = await supabase
     .from('profiles')
     .update(updates)
     .eq('user_id', user.id)
+
+  if (error?.message?.includes('timezone_preference') && 'timezone_preference' in updates) {
+    const { timezone_preference: _unused, ...fallbackUpdates } = updates
+    const retry = await supabase
+      .from('profiles')
+      .update(fallbackUpdates)
+      .eq('user_id', user.id)
+    error = retry.error
+  }
 
   if (error) {
     return { success: false, error: error.message }

@@ -1,9 +1,9 @@
 import Link from 'next/link'
 import { getProfile } from '@/lib/supabase/profile'
-import { getProfileNamesByUserIds } from '@/lib/supabase/profile'
+import { getNotificationEvents } from '@/lib/activity/events'
 import { getSystemPrompt } from '@/lib/ai/prompts'
 import { createClient } from '@/lib/supabase/server'
-import type { UserRole } from '@/lib/supabase/types'
+import type { NotificationCategory, UserRole } from '@/lib/supabase/types'
 import styles from './dashboard.module.css'
 
 export default async function DashboardPage() {
@@ -78,25 +78,6 @@ export default async function DashboardPage() {
       .select('model'),
   ])
 
-  // Build activity feed
-  type ActivityItem = {
-    type: 'note' | 'document' | 'chat' | 'image' | 'human_chat' | 'todo'
-    title: string
-    href: string
-    date: string
-    icon: string
-    ownerName?: string
-  }
-
-  const ownerNameMap = await getProfileNamesByUserIds([
-    ...(recentNotes ?? []).map((n) => n.owner_id),
-    ...(recentDocs ?? []).map((d) => d.owner_id),
-    ...(recentChats ?? []).map((c) => c.owner_id),
-    ...(recentImages ?? []).map((i) => i.owner_id),
-    ...(recentHumanChats ?? []).map((c) => c.owner_id),
-    ...(recentTodoCards ?? []).map((t) => t.owner_id),
-  ])
-
   const threadOwnerIds = Array.from(new Set((allThreads ?? []).map((t) => t.owner_id)))
   const { data: threadOwnerProfiles } = threadOwnerIds.length
     ? await supabase
@@ -120,72 +101,16 @@ export default async function DashboardPage() {
     pricing: billingSettings,
   })
 
-  const activity: ActivityItem[] = []
+  const defaultCategories: NotificationCategory[] = ['notes', 'vault', 'todos', 'human_chat', 'ai_chat', 'images']
+  const notificationCategories = (profile?.notification_categories?.length
+    ? profile.notification_categories
+    : defaultCategories) as NotificationCategory[]
 
-  for (const note of recentNotes ?? []) {
-    activity.push({
-      type: 'note',
-      title: note.title || 'Untitled note',
-      href: `/notes/${note.id}`,
-      date: note.updated_at,
-      icon: '📝',
-      ownerName: ownerNameMap[note.owner_id],
-    })
-  }
-  for (const doc of recentDocs ?? []) {
-    activity.push({
-      type: 'document',
-      title: doc.file_name,
-      href: '/vault',
-      date: doc.created_at,
-      icon: '📁',
-      ownerName: ownerNameMap[doc.owner_id],
-    })
-  }
-  for (const chat of recentChats ?? []) {
-    activity.push({
-      type: 'chat',
-      title: chat.title || 'New Chat',
-      href: `/chat/${chat.id}`,
-      date: chat.created_at,
-      icon: '💬',
-      ownerName: ownerNameMap[chat.owner_id],
-    })
-  }
-  for (const img of recentImages ?? []) {
-    activity.push({
-      type: 'image',
-      title: img.prompt.slice(0, 60) + (img.prompt.length > 60 ? '...' : ''),
-      href: '/images',
-      date: img.created_at,
-      icon: '🎨',
-      ownerName: ownerNameMap[img.owner_id],
-    })
-  }
-  for (const channel of recentHumanChats ?? []) {
-    activity.push({
-      type: 'human_chat',
-      title: channel.name || 'Human Chat',
-      href: `/family-chat/${channel.id}`,
-      date: channel.updated_at,
-      icon: '🗨️',
-      ownerName: ownerNameMap[channel.owner_id],
-    })
-  }
-  for (const todo of recentTodoCards ?? []) {
-    activity.push({
-      type: 'todo',
-      title: todo.title || 'To Do List',
-      href: '/todos',
-      date: todo.updated_at,
-      icon: '📌',
-      ownerName: ownerNameMap[todo.owner_id],
-    })
-  }
-
-  // Sort by date, take top 10
-  activity.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-  const recentActivity = activity.slice(0, 10)
+  const recentActivity = (profile?.notifications_enabled ?? true)
+    ? (await getNotificationEvents({ categories: notificationCategories, limit: 30 }))
+        .filter((item) => item.ownerId !== userId)
+        .slice(0, 10)
+    : []
 
   return (
     <div className={styles.container}>

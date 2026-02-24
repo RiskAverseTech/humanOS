@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { getProfileNamesByUserIds, getProfileAvatarsByUserIds } from '@/lib/supabase/profile'
+import { getProfile, getProfileNamesByUserIds, getProfileAvatarsByUserIds } from '@/lib/supabase/profile'
 import { FamilyChatRoom } from '../room'
 import { FamilyChatMembersPanel } from '../members-panel'
 import { FamilyChatShell } from '../shell'
@@ -11,10 +11,11 @@ type Props = {
 
 export default async function FamilyChatChannelPage({ params }: Props) {
   const { id } = await params
-  const [channel, channels, messages] = await Promise.all([
+  const [channel, channels, messages, currentProfile] = await Promise.all([
     getFamilyChannel(id),
     getFamilyChannels(),
     getFamilyMessages(id),
+    getProfile(),
   ])
 
   if (!channel) notFound()
@@ -30,6 +31,9 @@ export default async function FamilyChatChannelPage({ params }: Props) {
   ])
 
   const participantIds = Array.from(new Set([channel.owner_id, ...messages.map((m) => m.author_id)]))
+  if (currentProfile?.user_id && !participantIds.includes(currentProfile.user_id)) {
+    participantIds.push(currentProfile.user_id)
+  }
   const participants = participantIds
     .map((userId) => ({
       userId,

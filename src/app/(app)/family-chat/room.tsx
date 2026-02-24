@@ -311,6 +311,14 @@ export function FamilyChatRoom({ channel, messages: initialMessages, ownerNames,
     })
   }
 
+  function handleComposerKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      if ((!input.trim() && !attachment) || sending) return
+      void handleSubmit(e)
+    }
+  }
+
   function handleInitialMessageImageReady(messageId: string) {
     if (initialPositioned) return
     scrollMessagesToBottom()
@@ -479,6 +487,7 @@ export function FamilyChatRoom({ channel, messages: initialMessages, ownerNames,
             className={styles.textarea}
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleComposerKeyDown}
             onPaste={handlePaste}
             placeholder="Message the family... (paste image or upload, emojis work 🙂)"
             rows={2}

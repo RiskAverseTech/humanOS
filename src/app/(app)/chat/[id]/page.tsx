@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { getProfileNamesByUserIds, getProfileAvatarsByUserIds } from '@/lib/supabase/profile'
+import { getProfile, getProfileNamesByUserIds, getProfileAvatarsByUserIds } from '@/lib/supabase/profile'
 import { getThread, getThreads, getMessages } from '../actions'
 import { ChatLayout } from '../chat-layout'
 import { ChatMessages } from '@/components/chat/chat-messages'
@@ -11,10 +11,11 @@ type Props = {
 
 export default async function ChatThreadPage({ params }: Props) {
   const { id } = await params
-  const [thread, threads, messages] = await Promise.all([
+  const [thread, threads, messages, currentProfile] = await Promise.all([
     getThread(id),
     getThreads(),
     getMessages(id),
+    getProfile(),
   ])
 
   if (!thread) {
@@ -26,6 +27,7 @@ export default async function ChatThreadPage({ params }: Props) {
     thread.owner_id,
     ...threads.map((t) => t.owner_id),
     ...messages.filter((m) => m.sender_id).map((m) => m.sender_id!),
+    ...(currentProfile?.user_id ? [currentProfile.user_id] : []),
   ]))
 
   const [threadOwnerNames, memberAvatars] = await Promise.all([
@@ -33,7 +35,14 @@ export default async function ChatThreadPage({ params }: Props) {
     getProfileAvatarsByUserIds(allUserIds),
   ])
 
-  const humanParticipants = Array.from(new Set(messages.map((m) => m.sender_id).filter(Boolean) as string[]))
+  const humanParticipantIds = Array.from(
+    new Set([
+      ...(messages.map((m) => m.sender_id).filter(Boolean) as string[]),
+      ...(currentProfile?.user_id ? [currentProfile.user_id] : []),
+    ])
+  )
+
+  const humanParticipants = humanParticipantIds
     .map((userId) => ({
       userId,
       name: threadOwnerNames[userId] ?? 'Unknown',

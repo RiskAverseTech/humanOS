@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import type { NotificationCategory } from '@/lib/supabase/types'
 import { getProfileNamesByUserIds } from '@/lib/supabase/profile'
+import { getActivityFeed } from '@/lib/activity/feed'
 
 export type ActivityEventEntity =
   | 'note'
@@ -100,7 +101,36 @@ export async function getNotificationEvents(options?: {
 
   const { data, error } = await query
   if (error || !data) {
-    if (error) console.error('Failed to fetch notification events:', error)
+    if (error) {
+      console.error('Failed to fetch notification events:', error)
+      if (
+        error.code === 'PGRST205' ||
+        (typeof error.message === 'string' && error.message.includes('activity_events'))
+      ) {
+        const fallback = await getActivityFeed({ maxItems: options?.limit ?? 30 })
+        const categoryMap: Record<NotificationEventItem['type'], NotificationCategory> = {
+          note: 'notes',
+          document: 'vault',
+          todo: 'todos',
+          human_chat: 'human_chat',
+          chat: 'ai_chat',
+          image: 'images',
+        }
+        return fallback
+          .filter((item) => !options?.categories?.length || options.categories.includes(categoryMap[item.type]))
+          .map((item, index) => ({
+            id: `fallback-${item.type}-${item.date}-${index}`,
+            category: categoryMap[item.type],
+            type: item.type,
+            title: item.title,
+            href: item.href,
+            date: item.date,
+            icon: item.icon,
+            ownerId: item.ownerId,
+            ownerName: item.ownerName,
+          }))
+      }
+    }
     return []
   }
 
@@ -121,4 +151,3 @@ export async function getNotificationEvents(options?: {
     }
   })
 }
-

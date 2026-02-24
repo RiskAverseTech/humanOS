@@ -25,12 +25,15 @@ export function TodosClient({ cards, itemsByCardId, ownerNames }: Props) {
   const router = useRouter()
   const profile = useProfile()
   const [creating, setCreating] = useState(false)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [newCardTitle, setNewCardTitle] = useState('New To Do')
 
   async function handleCreateCard() {
     setCreating(true)
-    const desiredTitle = window.prompt('Name this sticky list', 'New To Do')?.trim()
-    await createTodoCard({ is_shared: true, title: desiredTitle || 'New To Do' })
+    await createTodoCard({ is_shared: true, title: newCardTitle.trim() || 'New To Do' })
     setCreating(false)
+    setShowCreateModal(false)
+    setNewCardTitle('New To Do')
     router.refresh()
   }
 
@@ -41,10 +44,67 @@ export function TodosClient({ cards, itemsByCardId, ownerNames }: Props) {
           <h1 className={styles.title}>To Dos</h1>
           <p className={styles.subtitle}>Sticky list cards for quick family tasks</p>
         </div>
-        <button className={styles.addCardBtn} onClick={handleCreateCard} disabled={creating}>
+        <button className={styles.addCardBtn} onClick={() => setShowCreateModal(true)} disabled={creating}>
           {creating ? 'Adding...' : '+ New Sticky List'}
         </button>
       </div>
+
+      {showCreateModal && (
+        <div className={styles.createModalOverlay} onClick={() => !creating && setShowCreateModal(false)}>
+          <div className={styles.createModalCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.createModalHeader}>
+              <h2 className={styles.createModalTitle}>New Sticky List</h2>
+              <button
+                type="button"
+                className={styles.createModalClose}
+                onClick={() => setShowCreateModal(false)}
+                disabled={creating}
+                aria-label="Close"
+              >
+                &times;
+              </button>
+            </div>
+            <p className={styles.createModalText}>
+              Give this sticky list a name. It will be shared with the family by default.
+            </p>
+            <input
+              className={styles.createModalInput}
+              value={newCardTitle}
+              onChange={(e) => setNewCardTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  void handleCreateCard()
+                }
+                if (e.key === 'Escape' && !creating) {
+                  e.preventDefault()
+                  setShowCreateModal(false)
+                }
+              }}
+              autoFocus
+              maxLength={120}
+            />
+            <div className={styles.createModalActions}>
+              <button
+                type="button"
+                className={styles.createModalSecondary}
+                onClick={() => setShowCreateModal(false)}
+                disabled={creating}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={styles.createModalPrimary}
+                onClick={() => void handleCreateCard()}
+                disabled={creating}
+              >
+                {creating ? 'Creating...' : 'Create List'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {cards.length === 0 ? (
         <div className={styles.empty}>
