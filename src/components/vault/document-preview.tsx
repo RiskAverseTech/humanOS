@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { getDocumentUrl, type DocumentRow } from '@/app/(app)/vault/actions'
 import styles from './document-preview.module.css'
 
@@ -8,11 +8,15 @@ type DocumentPreviewProps = {
   document: DocumentRow
   ownerName?: string
   onClose: () => void
+  onPrev?: () => void
+  onNext?: () => void
+  positionLabel?: string
 }
 
-export function DocumentPreview({ document, ownerName, onClose }: DocumentPreviewProps) {
+export function DocumentPreview({ document, ownerName, onClose, onPrev, onNext, positionLabel }: DocumentPreviewProps) {
   const [url, setUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const touchStartXRef = useRef<number | null>(null)
 
   useEffect(() => {
     async function loadUrl() {
@@ -22,6 +26,25 @@ export function DocumentPreview({ document, ownerName, onClose }: DocumentPrevie
     }
     loadUrl()
   }, [document.storage_path])
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'ArrowLeft' && onPrev) {
+        e.preventDefault()
+        onPrev()
+      }
+      if (e.key === 'ArrowRight' && onNext) {
+        e.preventDefault()
+        onNext()
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [onPrev, onNext, onClose])
 
   const isImage = document.mime_type.startsWith('image/')
   const isPdf = document.mime_type === 'application/pdf'
@@ -37,6 +60,7 @@ export function DocumentPreview({ document, ownerName, onClose }: DocumentPrevie
             </span>
           </div>
           <div className={styles.headerActions}>
+            {positionLabel && <span className={styles.positionLabel}>{positionLabel}</span>}
             {url && (
               <a
                 href={url}
@@ -55,18 +79,72 @@ export function DocumentPreview({ document, ownerName, onClose }: DocumentPrevie
         </div>
 
         <div className={styles.previewArea}>
+          {(onPrev || onNext) && (
+            <>
+              {onPrev && (
+                <button
+                  type="button"
+                  className={`${styles.navButton} ${styles.navButtonPrev}`}
+                  onClick={onPrev}
+                  aria-label="Previous file"
+                >
+                  ‹
+                </button>
+              )}
+              {onNext && (
+                <button
+                  type="button"
+                  className={`${styles.navButton} ${styles.navButtonNext}`}
+                  onClick={onNext}
+                  aria-label="Next file"
+                >
+                  ›
+                </button>
+              )}
+            </>
+          )}
           {loading ? (
             <p className={styles.loadingText}>Loading preview...</p>
           ) : !url ? (
             <p className={styles.loadingText}>Failed to load preview</p>
           ) : isImage ? (
             /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={url} alt={document.file_name} className={styles.previewImage} />
+            <img
+              src={url}
+              alt={document.file_name}
+              className={styles.previewImage}
+              onTouchStart={(e) => {
+                touchStartXRef.current = e.changedTouches[0]?.clientX ?? null
+              }}
+              onTouchEnd={(e) => {
+                const startX = touchStartXRef.current
+                const endX = e.changedTouches[0]?.clientX ?? null
+                touchStartXRef.current = null
+                if (startX == null || endX == null) return
+                const dx = endX - startX
+                if (Math.abs(dx) < 40) return
+                if (dx < 0) onNext?.()
+                else onPrev?.()
+              }}
+            />
           ) : isPdf ? (
             <iframe
               src={url}
               className={styles.previewPdf}
               title={document.file_name}
+              onTouchStart={(e) => {
+                touchStartXRef.current = e.changedTouches[0]?.clientX ?? null
+              }}
+              onTouchEnd={(e) => {
+                const startX = touchStartXRef.current
+                const endX = e.changedTouches[0]?.clientX ?? null
+                touchStartXRef.current = null
+                if (startX == null || endX == null) return
+                const dx = endX - startX
+                if (Math.abs(dx) < 40) return
+                if (dx < 0) onNext?.()
+                else onPrev?.()
+              }}
             />
           ) : (
             <div className={styles.noPreview}>

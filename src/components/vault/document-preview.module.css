@@ -54,6 +54,11 @@
   flex-shrink: 0;
 }
 
+.positionLabel {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
 .downloadButton {
   padding: var(--space-1) var(--space-3);
   font-size: var(--text-sm);
@@ -98,6 +103,37 @@
   justify-content: center;
   min-height: 300px;
   background-color: var(--color-bg-secondary);
+  position: relative;
+}
+
+.navButton {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+  color: var(--color-text);
+  font-size: 24px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.navButton:hover {
+  background: var(--color-surface-hover);
+}
+
+.navButtonPrev {
+  left: var(--space-2);
+}
+
+.navButtonNext {
+  right: var(--space-2);
 }
 
 .loadingText {
@@ -150,4 +186,20 @@
   background-color: var(--color-bg-secondary);
   color: var(--color-text-secondary);
   border-radius: var(--radius-full);
+}
+
+@media (max-width: 768px) {
+  .navButton {
+    width: 32px;
+    height: 32px;
+    font-size: 22px;
+  }
+
+  .header {
+    padding: var(--space-3);
+  }
+
+  .tags {
+    padding: var(--space-2) var(--space-3);
+  }
 }

@@ -76,7 +76,6 @@ export function FamilyChatRoom({
   const initialRevealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const initialPostRevealAnchorsRef = useRef<number[]>([])
   const postSendAnchorTimeoutsRef = useRef<number[]>([])
-  const anchorTickerRef = useRef<number | null>(null)
   const initialAutoAnchorUntilRef = useRef<number>(0)
   const postSendAutoAnchorUntilRef = useRef<number>(0)
   const userTookScrollControlRef = useRef(false)
@@ -103,26 +102,6 @@ export function FamilyChatRoom({
     }, 120)
   }
 
-  function stopAnchorTicker() {
-    if (!anchorTickerRef.current) return
-    clearInterval(anchorTickerRef.current)
-    anchorTickerRef.current = null
-  }
-
-  function ensureAnchorTicker() {
-    if (anchorTickerRef.current) return
-    anchorTickerRef.current = window.setInterval(() => {
-      const now = Date.now()
-      const inInitialWindow = now <= initialAutoAnchorUntilRef.current
-      const inPostSendWindow = now <= postSendAutoAnchorUntilRef.current
-      if (userTookScrollControlRef.current || (!inInitialWindow && !inPostSendWindow)) {
-        stopAnchorTicker()
-        return
-      }
-      scrollMessagesToBottom()
-    }, 120)
-  }
-
   function revealAtBottom() {
     scrollMessagesToBottom()
     requestAnimationFrame(() => {
@@ -130,7 +109,6 @@ export function FamilyChatRoom({
       initialAutoAnchorUntilRef.current = Math.max(initialAutoAnchorUntilRef.current, Date.now() + 6000)
       setInitialPositioned(true)
       schedulePostRevealAnchors()
-      ensureAnchorTicker()
     })
   }
 
@@ -166,7 +144,6 @@ export function FamilyChatRoom({
     initialAutoAnchorUntilRef.current = Math.max(initialAutoAnchorUntilRef.current, until)
     postSendAutoAnchorUntilRef.current = until
     userTookScrollControlRef.current = false
-    ensureAnchorTicker()
     scrollMessagesToBottom()
     requestAnimationFrame(() => {
       scrollMessagesToBottom()
@@ -236,7 +213,6 @@ export function FamilyChatRoom({
     userTookScrollControlRef.current = false
     clearAnchorTimeouts(initialPostRevealAnchorsRef)
     clearAnchorTimeouts(postSendAnchorTimeoutsRef)
-    stopAnchorTicker()
     nearBottomRef.current = true
     pendingIncomingAutoScrollRef.current = false
     prevRenderedMessageCountRef.current = initialMessages.length
@@ -333,7 +309,6 @@ export function FamilyChatRoom({
       for (const timeoutId of postSendAnchorTimeoutsRef.current) {
         clearTimeout(timeoutId)
       }
-      stopAnchorTicker()
     }
   }, [])
 
@@ -519,7 +494,6 @@ export function FamilyChatRoom({
     if (programmaticScrollRef.current) return
     if (Date.now() <= suppressScrollEventsUntilRef.current) return
     userTookScrollControlRef.current = true
-    stopAnchorTicker()
   }
 
   function getReactionGroups(messageId: string) {

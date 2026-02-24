@@ -33,6 +33,15 @@ export function VaultClient({
   const [previewDoc, setPreviewDoc] = useState<DocumentRow | null>(null)
   const [showUpload, setShowUpload] = useState(false)
 
+  const previewIndex = previewDoc ? documents.findIndex((doc) => doc.id === previewDoc.id) : -1
+
+  function navigatePreview(delta: number) {
+    if (!previewDoc || documents.length <= 1) return
+    if (previewIndex < 0) return
+    const nextIndex = (previewIndex + delta + documents.length) % documents.length
+    setPreviewDoc(documents[nextIndex] ?? null)
+  }
+
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()
     const params = new URLSearchParams()
@@ -212,6 +221,9 @@ export function VaultClient({
           document={previewDoc}
           ownerName={ownerNames[previewDoc.owner_id]}
           onClose={() => setPreviewDoc(null)}
+          onPrev={documents.length > 1 ? () => navigatePreview(-1) : undefined}
+          onNext={documents.length > 1 ? () => navigatePreview(1) : undefined}
+          positionLabel={previewIndex >= 0 ? `${previewIndex + 1} / ${documents.length}` : undefined}
         />
       )}
     </div>
