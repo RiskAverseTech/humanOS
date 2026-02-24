@@ -263,10 +263,22 @@ function TodoCard({
 function TodoItem({ item, canEdit }: { item: TodoItemRow; canEdit: boolean }) {
   const router = useRouter()
   const [text, setText] = useState(item.text)
+  const textRef = useRef<HTMLTextAreaElement>(null)
+
+  function resizeTextArea() {
+    const el = textRef.current
+    if (!el) return
+    el.style.height = '0px'
+    el.style.height = `${el.scrollHeight}px`
+  }
 
   useEffect(() => {
     setText(item.text)
   }, [item.id, item.text])
+
+  useEffect(() => {
+    resizeTextArea()
+  }, [text, item.id])
 
   async function toggleDone() {
     if (!canEdit) return
@@ -299,9 +311,11 @@ function TodoItem({ item, canEdit }: { item: TodoItemRow; canEdit: boolean }) {
       >
         {item.is_done ? '✓' : ''}
       </button>
-      <input
+      <textarea
+        ref={textRef}
         className={`${styles.itemText} ${item.is_done ? styles.itemTextDone : ''}`}
         value={text}
+        title={text}
         onChange={(e) => setText(e.target.value)}
         onBlur={() => void saveText()}
         onKeyDown={(e) => {
@@ -311,6 +325,7 @@ function TodoItem({ item, canEdit }: { item: TodoItemRow; canEdit: boolean }) {
           }
         }}
         disabled={!canEdit}
+        rows={1}
       />
       {canEdit && (
         <button type="button" className={styles.removeItemBtn} onClick={() => void remove()} aria-label="Delete item">
