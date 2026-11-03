@@ -12,9 +12,10 @@ Please report it privately to Risk Averse Tech with:
 - impact assessment (what an attacker could do)
 - any suggested mitigation (optional)
 
-Until a dedicated security contact inbox is published, use the contact method listed on:
-
-- [Risk Averse Tech](https://www.riskaversetechnology.company/)
+Report it through GitHub's private vulnerability reporting on this repository:
+the **Security** tab, then **Report a vulnerability**. Reports go only to the
+maintainers and are not visible publicly. If that form is unavailable to you,
+use the contact method listed on [Risk Averse Tech](https://www.riskaversetechnology.company/).
 
 ## Scope
 

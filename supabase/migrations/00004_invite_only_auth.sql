@@ -3,11 +3,12 @@
 -- Migration 00004: Restrict signups to invited users only
 -- ============================================================================
 
--- Hardcoded admin email function (avoids ALTER DATABASE which Supabase blocks).
--- To change the admin email, update this function.
+-- Admin email helper. Placeholder only: migration 00032 replaces this function
+-- with one that reads private.installation_settings. Configure the real address there.
+-- (ALTER DATABASE is not available on Supabase, which is why this was once hardcoded.)
 CREATE OR REPLACE FUNCTION public.get_admin_email()
 RETURNS text AS $$
-  SELECT 'jzilahy@gmail.com'::text;
+  SELECT 'admin@example.invalid'::text;
 $$ LANGUAGE sql IMMUTABLE;
 
 -- Fix handle_new_user to use the function instead of current_setting

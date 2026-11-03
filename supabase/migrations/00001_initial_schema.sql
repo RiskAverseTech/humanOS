@@ -181,11 +181,12 @@ $$ LANGUAGE sql SECURITY DEFINER STABLE;
 
 COMMENT ON FUNCTION public.is_admin IS 'Returns true if the current user has the admin role';
 
--- 11. Admin email helper (hardcoded – Supabase blocks ALTER DATABASE)
+-- 11. Admin email helper. Placeholder only: migration 00032 replaces this
+--     function with one that reads private.installation_settings.
 -- ============================================================================
 CREATE OR REPLACE FUNCTION public.get_admin_email()
 RETURNS text AS $$
-  SELECT 'jzilahy@gmail.com'::text;
+  SELECT 'admin@example.invalid'::text;
 $$ LANGUAGE sql IMMUTABLE;
 
 -- 12. Auto-create profile on signup via trigger

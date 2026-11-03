@@ -50,10 +50,33 @@ cp .env.example .env.local
 
 4. Create your Supabase project schema
 
-- Run the SQL migrations in `supabase/migrations` in order
+- Run the SQL migrations in `supabase/migrations` in order, stopping on the first error
 - This repo expects those migrations to be applied before the app is fully functional
 
-5. Start the dev server
+5. Configure the administrator
+
+No administrator identity ships with the code. Migration 00032 creates a
+`private.installation_settings` table that the signup triggers read: the address
+stored there is allowed to sign up without an invitation and receives the `admin`
+role. Set it once with trusted SQL (the Supabase SQL Editor is fine), replacing
+the example:
+
+```sql
+insert into private.installation_settings (singleton, bootstrap_admin_email)
+values (true, 'admin@example.invalid')
+on conflict (singleton) do update
+set bootstrap_admin_email = excluded.bootstrap_admin_email;
+```
+
+Use a lowercase address you control. Until this row exists nobody can sign up,
+which is intended: the install fails closed. Do not expose the `private` schema
+through the Data API.
+
+Upgrading an existing install: apply 00032 on its own, insert the row above with
+your current administrator's address, and keep authentication closed in between.
+Roles already granted are not changed by this migration.
+
+6. Start the dev server
 
 ```bash
 npm run dev
